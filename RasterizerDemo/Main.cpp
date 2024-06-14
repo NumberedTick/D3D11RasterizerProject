@@ -27,7 +27,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->OMSetRenderTargets(1, &rtv, dsView);
 
-	immediateContext->DrawIndexed(35, 0, 0);
+	immediateContext->DrawIndexed(36, 0, 0);
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
