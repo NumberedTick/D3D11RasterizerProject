@@ -896,9 +896,9 @@ namespace objl
 						{
 							if (iVerts[j].Position == pCur.Position)
 								oIndices.push_back(j);
-							if (iVerts[j].Position == pNext.Position)
-								oIndices.push_back(j);
 							if (iVerts[j].Position == pPrev.Position)
+								oIndices.push_back(j);
+							if (iVerts[j].Position == pNext.Position)
 								oIndices.push_back(j);
 						}
 
