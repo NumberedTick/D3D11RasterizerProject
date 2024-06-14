@@ -118,7 +118,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		
 		// Turning the time into a float and determning the amount of time for 1 full rotation
 		float timePerFrame = duration.count();
-		float timeForRotation = 13.5f;
+		float timeForRotation = 7.5f;
 		
 		// A check for to see if full rotation
 		if (rotationAmount >= XM_2PI)
