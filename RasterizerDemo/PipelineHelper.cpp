@@ -154,8 +154,8 @@ bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer)
 			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Y;
 
 			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
-			//Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
-			//Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
+			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
+			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
 
 			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
 			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
