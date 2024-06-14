@@ -150,12 +150,12 @@ bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer)
 		for (int k = 0; k < objLoader.LoadedMeshes[j].Vertices.size(); ++k) {
 			SimpleVertex Vertex;
 			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
-			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Z;
-			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Y;
+			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
+			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
 
 			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
-			//Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
-			//Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
+			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
+			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
 
 			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
 			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
@@ -208,6 +208,13 @@ bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer)
 	{
 		indices.push_back(objLoader.LoadedIndices[i]);
 		
+	}
+
+	for (int i = 0; i < objLoader.LoadedIndices.size()/3; ++i)
+	{
+		int temp = indices[3 * i + 1];
+		indices[3 * i + 1] = indices[3 * i + 2];
+		indices[3 * i + 2] = temp;
 	}
 
 	D3D11_BUFFER_DESC bufferDesc;
@@ -294,7 +301,7 @@ bool CreateSampler(ID3D11Device* device, ID3D11SamplerState*& samplerState)
 bool CreateLightBuffer(ID3D11Device* device, ID3D11Buffer*& constantLightBuffer)
 {
 	// Deffining the pramiters for the light in view space
-	std::array<float, 4> lightPosition = { 512.0f, 288.0f, 75.0f, 0.0f};
+	std::array<float, 4> lightPosition = { 512.0f, 288.0f, 175.0f, 0.0f};
 	std::array<float, 4> lightColor = { 1.0f, 1.0f, 1.0f, 1.0f};
 	float lightIntencity = 50.0f;
 
