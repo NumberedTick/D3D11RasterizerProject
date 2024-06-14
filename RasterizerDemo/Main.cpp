@@ -28,6 +28,11 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 	immediateContext->OMSetRenderTargets(1, &rtv, dsView);
 
 	immediateContext->DrawIndexed(36, 0, 0);
+	immediateContext->DrawIndexed(36, 0, 0);
+	immediateContext->DrawIndexed(36, 0, 0);
+	immediateContext->DrawIndexed(36, 0, 0);
+	immediateContext->DrawIndexed(36, 0, 0);
+
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
