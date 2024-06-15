@@ -3,6 +3,7 @@
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include <chrono>
+#include <vector>
 
 #include "WindowHelper.h"
 #include "D3D11Helper.h"
@@ -10,7 +11,7 @@
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 			ID3D11DepthStencilView* dsView, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, ID3D11Buffer* vertexBuffer, ID3D11Buffer* indexBuffer)
+			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, ID3D11Buffer* vertexBuffer, ID3D11Buffer* indexBuffer, std::vector<unsigned int> indices)
 {
 	float clearColour[4] = { 0, 0, 0, 0 };
 	immediateContext->ClearRenderTargetView(rtv, clearColour);
@@ -27,7 +28,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->OMSetRenderTargets(1, &rtv, dsView);
 
-	immediateContext->DrawIndexed(36, 0, 0);
+	immediateContext->DrawIndexed(indices.size(), 0, 0);
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -65,6 +66,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11ShaderResourceView* srv;
 	ID3D11SamplerState* samplerState;
 	
+	std::vector<unsigned int> indices;
 
 	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, dsTexture, dsView, viewport))
 	{
@@ -72,7 +74,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, vertexBuffer, indexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer,constantCameraBuffer, immediateContext, texture, srv, samplerState))
+	if (!SetupPipeline(device, vertexBuffer, indexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer,constantCameraBuffer, immediateContext, texture, srv, samplerState, indices))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -109,7 +111,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->Unmap(constantBufferVertex, 0);
 		
 		// Rendering
-		Render(immediateContext, rtv, dsView, viewport, vShader, pShader, inputLayout, vertexBuffer, indexBuffer);
+		Render(immediateContext, rtv, dsView, viewport, vShader, pShader, inputLayout, vertexBuffer, indexBuffer, indices);
 		swapChain->Present(0, 0);
 
 		// End time for chorno for the time to render a frame and the total time to render a frame
