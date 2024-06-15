@@ -101,6 +101,40 @@ XMMATRIX CreatViewPerspectiveMatrix()
 	return viewAndPerspectiveMatrix;
 }
 
+bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexes) 
+{
+	objl::Loader objLoader;
+	bool objFileCheck = objLoader.LoadFile(modleName);
+
+	if (!objFileCheck)
+	{
+		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
+		return false;
+	}
+
+	for (int j = 0; j < objLoader.LoadedMeshes.size(); ++j)
+	{
+		for (int k = 0; k < objLoader.LoadedMeshes[j].Vertices.size(); ++k) {
+			SimpleVertex Vertex;
+			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
+			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
+			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
+
+			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
+			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
+			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
+
+			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
+			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
+
+			modelVertexes.push_back(Vertex);
+		}
+	}
+	return true;
+}
+
+
+
 bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
@@ -133,42 +167,18 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 // Creation of the Vertex Buffer
 bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer) 
 {
-	objl::Loader objLoader;
-	bool objFileCheck = objLoader.LoadFile("untitled.obj");
+	std::vector<SimpleVertex> Vertices;
+	std::string modelName = "untitled.obj";
 
-	if (!objFileCheck) 
+	if (!LoadVertexs(modelName, Vertices))
 	{
-		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
 		return false;
 	}
 
-	std::vector<SimpleVertex> Vertices;
-
-	
-	for (int j = 0; j < objLoader.LoadedMeshes.size(); ++j)
-	{
-		for (int k = 0; k < objLoader.LoadedMeshes[j].Vertices.size(); ++k) {
-			SimpleVertex Vertex;
-			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
-			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
-			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
-
-			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
-			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
-			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
-
-			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
-			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
-
-			Vertices.push_back(Vertex);
-		}
-	}
-
-	int thing = Vertices.size();
 	
 	// Buffer des for vertex Buffer
 	D3D11_BUFFER_DESC bufferDesc; 
-	bufferDesc.ByteWidth = sizeof(SimpleVertex)*objLoader.LoadedVertices.size();
+	bufferDesc.ByteWidth = sizeof(SimpleVertex)*Vertices.size();
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
