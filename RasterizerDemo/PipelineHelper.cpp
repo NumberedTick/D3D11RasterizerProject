@@ -133,6 +133,33 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 	return true;
 }
 
+bool LoadIndex(std::string& modleName, std::vector<unsigned int>& indices)
+{
+	objl::Loader objLoader;
+	bool objFileCheck = objLoader.LoadFile(modleName);
+
+	if (!objFileCheck)
+	{
+		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
+		return false;
+	}
+
+
+	// Loads indices into a vector
+	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
+	{
+		indices.push_back(objLoader.LoadedIndices[i]);
+
+	}
+
+	// Swaps every second and thrid element in the vector due to the OBJ parder being made for OpenGLs left handed rendering
+	for (int i = 0; i < objLoader.LoadedIndices.size() / 3; ++i)
+	{
+		int temp = indices[3 * i + 1];
+		indices[3 * i + 1] = indices[3 * i + 2];
+		indices[3 * i + 2] = temp;
+	}
+}
 
 
 bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
@@ -200,35 +227,20 @@ bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer)
 
 bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer) 
 {
-	objl::Loader objLoader;
-	bool objFileCheck = objLoader.LoadFile("untitled.obj");
+	//MeshData meshData; 
+	//meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
+	
+	std::vector<unsigned int> indices;
 
-	if (!objFileCheck)
+	std::string modelName = "untitled.obj";
+
+	if (!LoadIndex(modelName, indices))
 	{
-		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
 		return false;
 	}
 
-	MeshData meshData; 
-	meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
-	
-
-	std::vector<unsigned int> indices;
-	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
-	{
-		indices.push_back(objLoader.LoadedIndices[i]);
-		
-	}
-
-	for (int i = 0; i < objLoader.LoadedIndices.size()/3; ++i)
-	{
-		int temp = indices[3 * i + 1];
-		indices[3 * i + 1] = indices[3 * i + 2];
-		indices[3 * i + 2] = temp;
-	}
-
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth = sizeof(unsigned int)* objLoader.LoadedIndices.size();
+	bufferDesc.ByteWidth = sizeof(unsigned int)*indices.size();
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags= D3D11_BIND_INDEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
