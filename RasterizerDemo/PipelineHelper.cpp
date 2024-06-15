@@ -101,6 +101,69 @@ XMMATRIX CreatViewPerspectiveMatrix()
 	return viewAndPerspectiveMatrix;
 }
 
+bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexes) 
+{
+	objl::Loader objLoader;
+	bool objFileCheck = objLoader.LoadFile(modleName);
+
+	if (!objFileCheck)
+	{
+		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
+		return false;
+	}
+
+	for (int j = 0; j < objLoader.LoadedMeshes.size(); ++j)
+	{
+		for (int k = 0; k < objLoader.LoadedMeshes[j].Vertices.size(); ++k) {
+			SimpleVertex Vertex;
+			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
+			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
+			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
+
+			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
+			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
+			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
+
+			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
+			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
+
+			modelVertexes.push_back(Vertex);
+		}
+	}
+	return true;
+}
+
+bool LoadIndex(std::string& modleName, std::vector<unsigned int>& indices)
+{
+	objl::Loader objLoader;
+	bool objFileCheck = objLoader.LoadFile(modleName);
+
+	if (!objFileCheck)
+	{
+		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
+		return false;
+	}
+
+
+	// Loads indices into a vector
+	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
+	{
+		indices.push_back(objLoader.LoadedIndices[i]);
+
+	}
+
+	// Swaps every second and thrid element in the vector due to the OBJ parder being made for OpenGLs left handed rendering
+
+	for (int i = 0; i < objLoader.LoadedIndices.size() / 3; ++i)
+	{
+		int temp = indices[3 * i + 1];
+		indices[3 * i + 1] = indices[3 * i + 2];
+		indices[3 * i + 2] = temp;
+	}
+	
+}
+
+
 bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
@@ -133,42 +196,18 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 // Creation of the Vertex Buffer
 bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer) 
 {
-	objl::Loader objLoader;
-	bool objFileCheck = objLoader.LoadFile("untitled.obj");
+	std::vector<SimpleVertex> Vertices;
+	std::string modelName = "monkey.obj";
 
-	if (!objFileCheck) 
+	if (!LoadVertexs(modelName, Vertices))
 	{
-		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
 		return false;
 	}
 
-	std::vector<SimpleVertex> Vertices;
-
-	
-	for (int j = 0; j < objLoader.LoadedMeshes.size(); ++j)
-	{
-		for (int k = 0; k < objLoader.LoadedMeshes[j].Vertices.size(); ++k) {
-			SimpleVertex Vertex;
-			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
-			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
-			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
-
-			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
-			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
-			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
-
-			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
-			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
-
-			Vertices.push_back(Vertex);
-		}
-	}
-
-	int thing = Vertices.size();
 	
 	// Buffer des for vertex Buffer
 	D3D11_BUFFER_DESC bufferDesc; 
-	bufferDesc.ByteWidth = sizeof(SimpleVertex)*objLoader.LoadedVertices.size();
+	bufferDesc.ByteWidth = sizeof(SimpleVertex)*Vertices.size();
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
@@ -188,37 +227,22 @@ bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer)
 	return !FAILED(hr);
 }
 
-bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer) 
+bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::vector<unsigned int>& indices)
 {
-	objl::Loader objLoader;
-	bool objFileCheck = objLoader.LoadFile("untitled.obj");
+	//MeshData meshData; 
+	//meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
+	
+	std::string modelName = "monkey.obj";
+	
+	std::vector<unsigned int> tempIndices = indices;
 
-	if (!objFileCheck)
+	if (!LoadIndex(modelName, indices))
 	{
-		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
 		return false;
 	}
 
-	MeshData meshData; 
-	meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
-	
-
-	std::vector<unsigned int> indices;
-	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
-	{
-		indices.push_back(objLoader.LoadedIndices[i]);
-		
-	}
-
-	for (int i = 0; i < objLoader.LoadedIndices.size()/3; ++i)
-	{
-		int temp = indices[3 * i + 1];
-		indices[3 * i + 1] = indices[3 * i + 2];
-		indices[3 * i + 2] = temp;
-	}
-
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth = sizeof(unsigned int)* objLoader.LoadedIndices.size();
+	bufferDesc.ByteWidth = sizeof(unsigned int)* indices.size();
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags= D3D11_BIND_INDEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
@@ -391,7 +415,7 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
-	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState)
+	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<unsigned int>& indices)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
@@ -420,7 +444,7 @@ bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buff
 		return false;
 	}
 	
-	if (!CreateIndexBuffer(device, indexBuffer))
+	if (!CreateIndexBuffer(device, indexBuffer, indices))
 	{
 		std::cerr << "Error creating index buffer!" << std::endl;
 		return false;

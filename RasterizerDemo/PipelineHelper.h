@@ -3,6 +3,7 @@
 #include <array>
 #include <d3d11.h>
 #include <DirectXMath.h>
+#include <vector>
 
 using namespace DirectX;
 
@@ -119,4 +120,4 @@ XMMATRIX CreateWorldMatrix(float angle);
 
 XMMATRIX CreatViewPerspectiveMatrix();
 
-bool SetupPipeline(ID3D11Device * device, ID3D11Buffer *& vertexBuffer, ID3D11Buffer*& indexBuffer, ID3D11VertexShader *& vShader, ID3D11PixelShader *& pShader, ID3D11InputLayout *& inputLayout, ID3D11Buffer*& constantBufferVertex, ID3D11Buffer*& constantLightPixel, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState);
+bool SetupPipeline(ID3D11Device * device, ID3D11Buffer *& vertexBuffer, ID3D11Buffer*& indexBuffer, ID3D11VertexShader *& vShader, ID3D11PixelShader *& pShader, ID3D11InputLayout *& inputLayout, ID3D11Buffer*& constantBufferVertex, ID3D11Buffer*& constantLightPixel, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<unsigned int>& indices);
