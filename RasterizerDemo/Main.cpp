@@ -28,6 +28,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->OMSetRenderTargets(1, &rtv, dsView);
 
+
 	immediateContext->DrawIndexed(indices.size(), 0, 0);
 }
 
