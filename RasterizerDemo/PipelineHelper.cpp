@@ -234,8 +234,6 @@ bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::ve
 	
 	std::string modelName = "monkey.obj";
 	
-	std::vector<unsigned int> tempIndices = indices;
-
 	if (!LoadIndex(modelName, indices))
 	{
 		return false;
