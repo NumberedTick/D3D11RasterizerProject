@@ -89,13 +89,13 @@ XMMATRIX CreateWorldMatrix(float angle)
 }
 
 // Function for creating a view+perspective matrix in world space
-XMMATRIX CreatViewPerspectiveMatrix()
+XMMATRIX CreatViewPerspectiveMatrix(float xPos, float yPos, float zPos)
 {
 	XMVECTOR focusPoint = { 0.0f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
-	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.0f };
+	XMVECTOR eyePosition = { xPos, yPos, zPos };
 	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
-	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 3.0f, 1024.0f / 576.0f, 1.0f, 10.0f);
+	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2.0f, 1024.0f / 576.0f, 1.0f, 10.0f);
 	XMMATRIX viewAndPerspectiveMatrix = XMMatrixMultiply(viewMatrix, perspectiveFovMatrix);
 
 	return viewAndPerspectiveMatrix;
@@ -153,7 +153,7 @@ bool LoadIndex(std::string& modleName, std::vector<unsigned int>& indices)
 	}
 
 	// Swaps every second and thrid element in the vector due to the OBJ parder being made for OpenGLs left handed rendering
-
+	
 	for (int i = 0; i < objLoader.LoadedIndices.size() / 3; ++i)
 	{
 		int temp = indices[3 * i + 1];
@@ -168,7 +168,7 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
 	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f);
-	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix();
+	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix( 0.0f, 0.0f, -4.0f );
 
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array[2];
@@ -197,7 +197,7 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer) 
 {
 	std::vector<SimpleVertex> Vertices;
-	std::string modelName = "monkey.obj";
+	std::string modelName = "untitled.obj";
 
 	if (!LoadVertexs(modelName, Vertices))
 	{
@@ -232,7 +232,7 @@ bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::ve
 	//MeshData meshData; 
 	//meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
 	
-	std::string modelName = "monkey.obj";
+	std::string modelName = "untitled.obj";
 	
 	if (!LoadIndex(modelName, indices))
 	{

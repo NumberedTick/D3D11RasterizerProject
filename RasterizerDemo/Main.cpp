@@ -91,7 +91,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	float rotationAmount = 0.0f;
 
-	XMMATRIX viewPerspectiveMatrix = CreatViewPerspectiveMatrix();
 
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
@@ -126,7 +125,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		float timeForRotation = 7.5f;
 		
 		// A check for to see if full rotation
-		if (rotationAmount >= XM_2PI)
+		if (rotationAmount >= 0)
 		{
 			rotationAmount = 0;
 		}
