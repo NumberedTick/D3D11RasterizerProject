@@ -125,7 +125,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		float timeForRotation = 7.5f;
 		
 		// A check for to see if full rotation
-		if (rotationAmount >= 0)
+		if (rotationAmount >= XM_PI*2)
 		{
 			rotationAmount = 0;
 		}

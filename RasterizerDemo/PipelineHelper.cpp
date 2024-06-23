@@ -95,7 +95,7 @@ XMMATRIX CreatViewPerspectiveMatrix(float xPos, float yPos, float zPos)
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
 	XMVECTOR eyePosition = { xPos, yPos, zPos };
 	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
-	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2.0f, 1024.0f / 576.0f, 1.0f, 10.0f);
+	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2.5f, 1024.0f / 576.0f, 1.0f, 10.0f);
 	XMMATRIX viewAndPerspectiveMatrix = XMMatrixMultiply(viewMatrix, perspectiveFovMatrix);
 
 	return viewAndPerspectiveMatrix;
@@ -197,7 +197,7 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer) 
 {
 	std::vector<SimpleVertex> Vertices;
-	std::string modelName = "untitled.obj";
+	std::string modelName = "monkey.obj";
 
 	if (!LoadVertexs(modelName, Vertices))
 	{
@@ -232,7 +232,7 @@ bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::ve
 	//MeshData meshData; 
 	//meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
 	
-	std::string modelName = "untitled.obj";
+	std::string modelName = "monkey.obj";
 	
 	if (!LoadIndex(modelName, indices))
 	{
