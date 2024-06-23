@@ -76,6 +76,28 @@ bool CreateDepthStencil(ID3D11Device* device, UINT width, UINT height, ID3D11Tex
 	return !(FAILED(hr));
 }
 
+bool CreateDepthStencilState(ID3D11Device* device, ID3D11DepthStencilState*& dsState)
+{
+	D3D11_DEPTH_STENCIL_DESC dsStateDesc;
+	dsStateDesc.DepthEnable = true;
+	dsStateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsStateDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+	dsStateDesc.StencilEnable = true;
+	dsStateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	dsStateDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	dsStateDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsStateDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	dsStateDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsStateDesc.FrontFace.StencilFunc = D3D11_COMPARISON_GREATER_EQUAL;
+	dsStateDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsStateDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	dsStateDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsStateDesc.BackFace.StencilFunc = D3D11_COMPARISON_GREATER_EQUAL;
+
+	HRESULT hr = device->CreateDepthStencilState(&dsStateDesc, &dsState);
+	return !(FAILED(hr));
+}
+
 void SetViewport(D3D11_VIEWPORT& viewport, UINT width, UINT height)
 {
 	viewport.TopLeftX = 0;
@@ -88,7 +110,7 @@ void SetViewport(D3D11_VIEWPORT& viewport, UINT width, UINT height)
 
 bool SetupD3D11(UINT width, UINT height, HWND window, ID3D11Device*& device,
 	ID3D11DeviceContext*& immediateContext, IDXGISwapChain*& swapChain, ID3D11RenderTargetView*& rtv,
-	ID3D11Texture2D*& dsTexture, ID3D11DepthStencilView*& dsView, D3D11_VIEWPORT& viewport)
+	ID3D11Texture2D*& dsTexture, ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState, D3D11_VIEWPORT& viewport)
 {
 	if (!CreateInterfaces(device, immediateContext, swapChain, width, height, window))
 	{
@@ -105,6 +127,12 @@ bool SetupD3D11(UINT width, UINT height, HWND window, ID3D11Device*& device,
 	if (!CreateDepthStencil(device, width, height, dsTexture, dsView))
 	{
 		std::cerr << "Error creating depth stencil view!" << std::endl;
+		return false;
+	}
+
+	if (!CreateDepthStencilState(device, dsState)) 
+	{
+		std::cerr << "Error creating depth stencil state!" << std::endl;
 		return false;
 	}
 
