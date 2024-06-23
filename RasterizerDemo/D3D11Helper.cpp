@@ -82,13 +82,16 @@ bool CreateDepthStencilState(ID3D11Device* device, ID3D11DepthStencilState*& dsS
 	dsStateDesc.DepthEnable = true;
 	dsStateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	dsStateDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+
 	dsStateDesc.StencilEnable = true;
 	dsStateDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
 	dsStateDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+
 	dsStateDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 	dsStateDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
 	dsStateDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	dsStateDesc.FrontFace.StencilFunc = D3D11_COMPARISON_GREATER_EQUAL;
+
 	dsStateDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 	dsStateDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
 	dsStateDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
