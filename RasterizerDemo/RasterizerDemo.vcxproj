@@ -150,6 +150,8 @@
     <ClCompile Include="CameraD3D11.cpp" />
     <ClCompile Include="ConstantBufferD3D11.cpp" />
     <ClCompile Include="D3D11Helper.cpp" />
+    <ClCompile Include="IndexBuffer.cpp" />
+    <ClCompile Include="InputLayoutD3D11.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="PipelineHelper.cpp" />
     <ClCompile Include="MeshD3D11.cpp" />
