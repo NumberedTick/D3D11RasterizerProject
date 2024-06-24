@@ -118,9 +118,9 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 			SimpleVertex Vertex;
 			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
 			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
-			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
+			Vertex.pos[2] = -objLoader.LoadedVertices[k].Position.Z;
 
-			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
+			Vertex.norm[0] = -objLoader.LoadedVertices[k].Normal.X;
 			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
 			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
 
@@ -229,8 +229,6 @@ bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer)
 
 bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::vector<unsigned int>& indices)
 {
-	//MeshData meshData; 
-	//meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
 	
 	std::string modelName = "monkey.obj";
 	
