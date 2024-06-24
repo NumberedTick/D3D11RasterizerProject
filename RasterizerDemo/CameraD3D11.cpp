@@ -67,10 +67,11 @@ void CameraD3D11::UpdateInternalConstantBuffer(ID3D11DeviceContext* context)
 
 ID3D11Buffer* CameraD3D11::GetConstantBuffer() const
 {
-
+	return cameraBuffer.GetBuffer();
 }
-
+/*
 DirectX::XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
 {
-
+	return 
 }
+*/
