@@ -9,7 +9,7 @@ ConstantBufferD3D11::~ConstantBufferD3D11()
 {
 
 }
-
+/*
 ConstantBufferD3D11::ConstantBufferD3D11(ConstantBufferD3D11&& other)
 {
 
@@ -19,7 +19,7 @@ ConstantBufferD3D11& ConstantBufferD3D11::operator=(ConstantBufferD3D11&& other)
 {
 
 }
-
+*/
 void ConstantBufferD3D11::Initialize(ID3D11Device* device, size_t byteSize, void* initialData)
 {
 

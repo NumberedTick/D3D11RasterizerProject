@@ -42,22 +42,22 @@ void CameraD3D11::RotateUp(float amount)
 
 const DirectX::XMFLOAT3& CameraD3D11::GetPosition() const
 {
-
+	return position;
 }
 
 const DirectX::XMFLOAT3& CameraD3D11::GetForward() const
 {
-
+	return forward;
 }
 
 const DirectX::XMFLOAT3& CameraD3D11::GetRight() const
 {
-
+	return right;
 }
 
 const DirectX::XMFLOAT3& CameraD3D11::GetUp() const
 {
-
+	return up;
 }
 
 void CameraD3D11::UpdateInternalConstantBuffer(ID3D11DeviceContext* context)

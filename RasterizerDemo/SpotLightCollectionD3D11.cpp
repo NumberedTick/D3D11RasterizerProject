@@ -1,0 +1,1 @@
+#include "SpotLightCollectionD3D11.h"
