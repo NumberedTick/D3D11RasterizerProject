@@ -89,12 +89,12 @@ XMMATRIX CreateWorldMatrix(float angle)
 }
 
 // Function for creating a view+perspective matrix in world space
-XMMATRIX CreatViewPerspectiveMatrix(float xPos, float yPos, float zPos)
+XMMATRIX CreatViewPerspectiveMatrix()
 {
 	XMVECTOR focusPoint = { 0.0f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
-	XMVECTOR eyePosition = { xPos, yPos, zPos };
-	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
+	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.0f };
+	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection); 
 	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2.5f, 1024.0f / 576.0f, 1.0f, 10.0f);
 	XMMATRIX viewAndPerspectiveMatrix = XMMatrixMultiply(viewMatrix, perspectiveFovMatrix);
 
@@ -118,9 +118,9 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 			SimpleVertex Vertex;
 			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
 			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
-			Vertex.pos[2] = -objLoader.LoadedVertices[k].Position.Z;
+			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
 
-			Vertex.norm[0] = -objLoader.LoadedVertices[k].Normal.X;
+			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
 			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
 			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
 
@@ -168,7 +168,7 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
 	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f);
-	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix( 0.0f, 0.0f, -4.0f );
+	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix();
 
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array[2];
