@@ -67,6 +67,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* constantCameraBuffer;
 	ID3D11Texture2D* texture;
 	ID3D11ShaderResourceView* srv;
+	ID3D11Texture2D* gBuffer;
+	ID3D11RenderTargetView* gBufferRtv;
+	ID3D11ShaderResourceView* gBufferSrv;
 	ID3D11SamplerState* samplerState;
 	
 	std::vector<unsigned int> indices;
@@ -77,7 +80,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, vertexBuffer, indexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer,constantCameraBuffer, immediateContext, texture, srv, samplerState, indices))
+	if (!SetupPipeline(device, vertexBuffer, indexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, indices, gBuffer, gBufferRtv, gBufferSrv, WIDTH, HEIGHT))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -91,6 +94,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	float rotationAmount = 0.0f;
 
+	float xDist = 0.0f;
 
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
@@ -104,7 +108,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		auto startTime = std::chrono::high_resolution_clock::now();
 
 		// creation of the new world matrix for the rotation
-		XMMATRIX newWorldMatrix = CreateWorldMatrix(rotationAmount);
+		XMMATRIX newWorldMatrix = CreateWorldMatrix(rotationAmount, xDist);
 		XMStoreFloat4x4(&float4x4Array, newWorldMatrix);
 
 		// Mapping the new world matrix to the vertex shader
@@ -128,9 +132,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (rotationAmount >= XM_PI*2)
 		{
 			rotationAmount = 0;
+		}		
+		
+		if (xDist >= 1.0f)
+		{
+			xDist = -1.0f;
 		}
 		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time
 		rotationAmount += (timePerFrame/timeForRotation)*XM_2PI;
+		xDist += (timePerFrame / timeForRotation) * 0.5f;
 	}
 
 	texture->Release();

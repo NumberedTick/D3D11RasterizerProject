@@ -116,8 +116,8 @@ struct Material
 };
 
 
-XMMATRIX CreateWorldMatrix(float angle);
+XMMATRIX CreateWorldMatrix(float angle, float xDist);
 
 XMMATRIX CreatViewPerspectiveMatrix(float xPos, float yPos, float zPos);
 
-bool SetupPipeline(ID3D11Device * device, ID3D11Buffer *& vertexBuffer, ID3D11Buffer*& indexBuffer, ID3D11VertexShader *& vShader, ID3D11PixelShader *& pShader, ID3D11InputLayout *& inputLayout, ID3D11Buffer*& constantBufferVertex, ID3D11Buffer*& constantLightPixel, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<unsigned int>& indices);
+bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, ID3D11Buffer*& constantLightPixel, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<unsigned int>& indices, ID3D11Texture2D*& gBuffer, ID3D11RenderTargetView*& gBufferRtv, ID3D11ShaderResourceView*& gBufferSrv, UINT width, UINT height);
