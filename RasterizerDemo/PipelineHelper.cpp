@@ -195,7 +195,7 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 }
 
 // Creation of the Vertex Buffer
-bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, std::vector<std::string>& modelNames)
+bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11& testVertexBuffer, std::vector<std::string>& modelNames)
 {
 	std::vector<SimpleVertex> Vertices;
 
@@ -207,26 +207,14 @@ bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, std::
 		}
 
 	}
+
+	testVertexBuffer.Initialize(device, sizeof(SimpleVertex), Vertices.size(), Vertices.data());
 	// Buffer des for vertex Buffer
-	D3D11_BUFFER_DESC bufferDesc; 
-	bufferDesc.ByteWidth = sizeof(SimpleVertex)*Vertices.size();
-	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	bufferDesc.StructureByteStride = 0;
+	
+	if (testVertexBuffer.GetBuffer() == nullptr)
+		return false;
 
-
-	// Data for the bufferDesc
-	D3D11_SUBRESOURCE_DATA data; 
-	data.pSysMem = Vertices.data();
-	data.SysMemPitch = 0;
-	data.SysMemSlicePitch = 0;
-
-	// Creation of Vertex Buffer
-	HRESULT hr = device->CreateBuffer(&bufferDesc, &data, &vertexBuffer);
-
-	return !FAILED(hr);
+	return true;
 }
 
 bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::vector<std::string>& modelNames,std::vector<unsigned int>& indices)
@@ -459,7 +447,7 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 
 }
 
-bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,  ID3D11VertexShader*& vShader,
+bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11& vertexBuffer, ID3D11Buffer*& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, 

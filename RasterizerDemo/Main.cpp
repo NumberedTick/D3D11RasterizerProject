@@ -8,10 +8,12 @@
 #include "WindowHelper.h"
 #include "D3D11Helper.h"
 #include "PipelineHelper.h"
+#include "IndexBufferD3D11.h"
+#include "VertexBufferD3D11.h"
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, ID3D11Buffer* vertexBuffer, ID3D11Buffer* indexBuffer, std::vector<unsigned int> indices)
+			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11& vertexBuffer, ID3D11Buffer* indexBuffer, std::vector<unsigned int> indices)
 {
 	float clearColour[4] = { 0, 0, 0, 0 };
 	immediateContext->ClearRenderTargetView(rtv, clearColour);
@@ -19,7 +21,8 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
-	immediateContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	ID3D11Buffer* buffers[] = { vertexBuffer.GetBuffer() };
+	immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
 	immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	immediateContext->IASetInputLayout(inputLayout);
 	immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -59,7 +62,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11VertexShader* vShader;
 	ID3D11PixelShader* pShader;
 	ID3D11InputLayout* inputLayout;
-	ID3D11Buffer* vertexBuffer;
+	//ID3D11Buffer* vertexBuffer;
 	ID3D11Buffer* indexBuffer;
 	ID3D11Buffer* constantBufferVertex;
 	ID3D11Buffer* constantLightBuffer;
@@ -71,7 +74,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11RenderTargetView* gBufferRtv;
 	ID3D11ShaderResourceView* gBufferSrv;
 	ID3D11SamplerState* samplerState;
+;
+	VertexBufferD3D11 testVertexBuffer;
+	IndexBufferD3D11 testIndexBuffer;
+
+	testIndexBuffer.GetBuffer();
 	
+
+
+	std::vector<std::string> modelNames;
+
+	modelNames.push_back("monkey.obj");
+
 	std::vector<unsigned int> indices;
 
 	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, dsTexture, dsView, dsState, viewport))
@@ -80,7 +94,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, vertexBuffer, indexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, indices, gBuffer, gBufferRtv, gBufferSrv, WIDTH, HEIGHT))
+	if (!SetupPipeline(device, testVertexBuffer, indexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames,indices, gBuffer, gBufferRtv, gBufferSrv, WIDTH, HEIGHT))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -117,7 +131,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->Unmap(constantBufferVertex, 0);
 		
 		// Rendering
-		Render(immediateContext, rtv, dsView, dsState, viewport, vShader, pShader, inputLayout, vertexBuffer, indexBuffer, indices);
+		Render(immediateContext, rtv, dsView, dsState, viewport, vShader, pShader, inputLayout, testVertexBuffer, indexBuffer, indices);
 		swapChain->Present(0, 0);
 
 		// End time for chorno for the time to render a frame and the total time to render a frame
@@ -146,7 +160,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	texture->Release();
 	srv->Release();
 	samplerState->Release();
-	vertexBuffer->Release();
+	//vertexBuffer->Release();
 	indexBuffer->Release();
 	constantBufferVertex->Release();
 	constantLightBuffer->Release();
