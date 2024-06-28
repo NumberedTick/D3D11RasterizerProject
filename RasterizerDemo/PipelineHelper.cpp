@@ -1,6 +1,7 @@
 #include "PipelineHelper.h"
 #include <DirectXMath.h>
 #include "MeshD3D11.h"
+#include "VertexBufferD3D11.h"
 #include "IndexBufferD3D11.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -133,7 +134,7 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 	return true;
 }
 
-bool LoadIndex(std::string& modleName, std::vector<unsigned int>& indices)
+bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 {
 	objl::Loader objLoader;
 	bool objFileCheck = objLoader.LoadFile(modleName);
@@ -194,17 +195,18 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 }
 
 // Creation of the Vertex Buffer
-bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer) 
+bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, std::vector<std::string>& modelNames)
 {
 	std::vector<SimpleVertex> Vertices;
-	std::string modelName = "monkey.obj";
 
-	if (!LoadVertexs(modelName, Vertices))
+	for (int i = 0; i < modelNames.size(); ++i)
 	{
-		return false;
-	}
+		if (!LoadVertexs(modelNames[i], Vertices))
+		{
+			return false;
+		}
 
-	
+	}
 	// Buffer des for vertex Buffer
 	D3D11_BUFFER_DESC bufferDesc; 
 	bufferDesc.ByteWidth = sizeof(SimpleVertex)*Vertices.size();
@@ -227,15 +229,17 @@ bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer)
 	return !FAILED(hr);
 }
 
-bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::vector<unsigned int>& indices)
+bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::vector<std::string>& modelNames,std::vector<unsigned int>& indices)
 {
 	
-	std::string modelName = "monkey.obj";
-	
-	if (!LoadIndex(modelName, indices))
+	for (int i = 0; i < modelNames.size(); ++i)
 	{
-		return false;
+		if (!LoadIndices(modelNames[i], indices))
+		{
+			return false;
+		}
 	}
+
 
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.ByteWidth = sizeof(unsigned int)* indices.size();
@@ -458,7 +462,7 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
-	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, 
+	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, 
 	std::vector<unsigned int>& indices, ID3D11Texture2D*& gBuffer , ID3D11RenderTargetView*& gBufferRtv, ID3D11ShaderResourceView*& gBufferSrv,UINT width, UINT height)
 {
 	std::string vShaderByteCode;
@@ -482,13 +486,13 @@ bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buff
 	}
 
 
-	if (!CreateVertexBuffer(device, vertexBuffer))
+	if (!CreateVertexBuffer(device, vertexBuffer, modelNames))
 	{
 		std::cerr << "Error creating vertex buffer!" << std::endl;
 		return false;
 	}
 	
-	if (!CreateIndexBuffer(device, indexBuffer, indices))
+	if (!CreateIndexBuffer(device, indexBuffer, modelNames, indices))
 	{
 		std::cerr << "Error creating index buffer!" << std::endl;
 		return false;
