@@ -13,8 +13,11 @@ VertexBufferD3D11::VertexBufferD3D11(ID3D11Device* device, UINT sizeOfVertex,
 
 VertexBufferD3D11::~VertexBufferD3D11()
 {
-	this->buffer->Release();
-	this->buffer = nullptr;
+	if (buffer)
+	{
+		this->buffer->Release();
+		this->buffer = nullptr;
+	}
 }
 
 void VertexBufferD3D11::Initialize(ID3D11Device* device, UINT sizeOfVertex,
@@ -46,12 +49,6 @@ void VertexBufferD3D11::Initialize(ID3D11Device* device, UINT sizeOfVertex,
 	data.SysMemSlicePitch = 0;
 
 	HRESULT hr = device->CreateBuffer(&bufferDesc, &data, &this->buffer);
-	if (FAILED(hr))
-	{
-		throw std::runtime_error("Error Creating Vertex Buffer");
-	}
-
-
 }
 
 UINT VertexBufferD3D11::GetNrOfVertices() const

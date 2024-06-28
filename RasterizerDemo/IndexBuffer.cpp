@@ -6,12 +6,20 @@ IndexBufferD3D11::IndexBufferD3D11(ID3D11Device* device, size_t nrOfIndicesInBuf
 }
 
 IndexBufferD3D11::~IndexBufferD3D11()
-{
+{	
+	if (buffer) 
+	{
+		this->buffer->Release();
+		this->buffer = nullptr;
+	}
 
 }
 
 void IndexBufferD3D11::Initialize(ID3D11Device* device, size_t nrOfIndicesInBuffer, uint32_t* indexData)
 {
+
+	this->nrOfIndices = nrOfIndicesInBuffer;
+
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.ByteWidth = sizeof(unsigned int) * nrOfIndices;
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -30,10 +38,10 @@ void IndexBufferD3D11::Initialize(ID3D11Device* device, size_t nrOfIndicesInBuff
 
 size_t IndexBufferD3D11::GetNrOfIndices() const
 {
-	return nrOfIndices;
+	return this->nrOfIndices;
 }
 
 ID3D11Buffer* IndexBufferD3D11::GetBuffer() const
 {
-	return buffer;
+	return this->buffer;
 }

@@ -13,7 +13,7 @@
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11& vertexBuffer, ID3D11Buffer* indexBuffer, std::vector<unsigned int> indices)
+			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11& vertexBuffer, IndexBufferD3D11& indexBuffer, std::vector<unsigned int> indices)
 {
 	float clearColour[4] = { 0, 0, 0, 0 };
 	immediateContext->ClearRenderTargetView(rtv, clearColour);
@@ -22,8 +22,9 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
 	ID3D11Buffer* buffers[] = { vertexBuffer.GetBuffer() };
+	ID3D11Buffer* indexBuffers[] = { indexBuffer.GetBuffer() };
 	immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
-	immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
 	immediateContext->IASetInputLayout(inputLayout);
 	immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	immediateContext->OMSetDepthStencilState(dsState, 0);
@@ -63,7 +64,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11PixelShader* pShader;
 	ID3D11InputLayout* inputLayout;
 	//ID3D11Buffer* vertexBuffer;
-	ID3D11Buffer* indexBuffer;
+	//ID3D11Buffer* indexBuffer;
 	ID3D11Buffer* constantBufferVertex;
 	ID3D11Buffer* constantLightBuffer;
 	ID3D11Buffer* constantMaterialBuffer;
@@ -76,10 +77,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11SamplerState* samplerState;
 ;
 	VertexBufferD3D11 testVertexBuffer;
-	IndexBufferD3D11 testIndexBuffer;
-
-	testIndexBuffer.GetBuffer();
-	
+	IndexBufferD3D11 testIndexBuffer;	
 
 
 	std::vector<std::string> modelNames;
@@ -94,7 +92,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, testVertexBuffer, indexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames,indices, gBuffer, gBufferRtv, gBufferSrv, WIDTH, HEIGHT))
+	if (!SetupPipeline(device, testVertexBuffer, testIndexBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames,indices, gBuffer, gBufferRtv, gBufferSrv, WIDTH, HEIGHT))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -131,7 +129,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->Unmap(constantBufferVertex, 0);
 		
 		// Rendering
-		Render(immediateContext, rtv, dsView, dsState, viewport, vShader, pShader, inputLayout, testVertexBuffer, indexBuffer, indices);
+		Render(immediateContext, rtv, dsView, dsState, viewport, vShader, pShader, inputLayout, testVertexBuffer, testIndexBuffer, indices);
 		swapChain->Present(0, 0);
 
 		// End time for chorno for the time to render a frame and the total time to render a frame
@@ -161,7 +159,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	srv->Release();
 	samplerState->Release();
 	//vertexBuffer->Release();
-	indexBuffer->Release();
+	//indexBuffer->Release();
 	constantBufferVertex->Release();
 	constantLightBuffer->Release();
 	constantMaterialBuffer->Release();

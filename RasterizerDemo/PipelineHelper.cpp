@@ -162,6 +162,8 @@ bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 		indices[3 * i + 2] = temp;
 	}
 	*/
+
+
 }
 
 
@@ -217,7 +219,7 @@ bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11& testVertexBuffe
 	return true;
 }
 
-bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::vector<std::string>& modelNames,std::vector<unsigned int>& indices)
+bool CreateIndexBuffer(ID3D11Device* device, IndexBufferD3D11& testIndexBuffer, std::vector<std::string>& modelNames,std::vector<unsigned int>& indices)
 {
 	
 	for (int i = 0; i < modelNames.size(); ++i)
@@ -227,24 +229,14 @@ bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::ve
 			return false;
 		}
 	}
+	testIndexBuffer.Initialize(device, indices.size(), indices.data());
 
+	if (testIndexBuffer.GetBuffer() == nullptr)
+	{
+		return false;
+	}
 
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth = sizeof(unsigned int)* indices.size();
-	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferDesc.BindFlags= D3D11_BIND_INDEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	bufferDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = indices.data();
-	data.SysMemPitch = 0;
-	data.SysMemSlicePitch = 0;
-
-	HRESULT hr = device->CreateBuffer(&bufferDesc, &data, &indexBuffer);
-
-	return !FAILED(hr);
+	return true;
 }
 
 
@@ -447,7 +439,7 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 
 }
 
-bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11& vertexBuffer, ID3D11Buffer*& indexBuffer,  ID3D11VertexShader*& vShader,
+bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11& vertexBuffer, IndexBufferD3D11& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, 
