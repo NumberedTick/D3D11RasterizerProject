@@ -34,7 +34,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 	immediateContext->OMSetRenderTargets(1, &rtv, dsView);
 
 
-	immediateContext->DrawIndexed(indices.size(), 0, 0);
+	immediateContext->DrawIndexed(indexBuffer.GetNrOfIndices(), 0, 0);
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -148,7 +148,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		
 		if (xDist >= 1.0f)
 		{
-			xDist = -1.0f;
+			xDist = 0.0f;
 		}
 		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time
 		rotationAmount += (timePerFrame/timeForRotation)*XM_2PI;

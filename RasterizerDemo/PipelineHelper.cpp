@@ -83,7 +83,7 @@ bool CreateInputLayout(ID3D11Device* device, ID3D11InputLayout*& inputLayout, co
 // Used mostly for the rotation
 XMMATRIX CreateWorldMatrix(float angle, float xDist)
 {
-	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, -0.6);
+	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, -1.0+xDist);
 	XMMATRIX rotationMatrix = XMMatrixRotationY(angle);
 	XMMATRIX worldMatrix = XMMatrixMultiply(translationMatrix, rotationMatrix);
 	return worldMatrix;
@@ -92,11 +92,11 @@ XMMATRIX CreateWorldMatrix(float angle, float xDist)
 // Function for creating a view+perspective matrix in world space
 XMMATRIX CreatViewPerspectiveMatrix()
 {
-	XMVECTOR focusPoint = { 0.0f, 0.0f, -0.6f };
+	XMVECTOR focusPoint = { 0.0f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
-	XMVECTOR eyePosition = { 0.0f, 0.0f, -7.0f };
+	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.0f };
 	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection); 
-	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 3.5f, 1024.0f / 576.0f, 0.1f, 20.0f);
+	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2.5f, 1024.0f / 576.0f, 0.1f, 1000.0f);
 	XMMATRIX viewAndPerspectiveMatrix = XMMatrixMultiply(viewMatrix, perspectiveFovMatrix);
 
 	return viewAndPerspectiveMatrix;
@@ -122,7 +122,7 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
 
 			Vertex.norm[0] = -objLoader.LoadedVertices[k].Normal.X;
-			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
+			Vertex.norm[1] = -objLoader.LoadedVertices[k].Normal.Y;
 			Vertex.norm[2] = -objLoader.LoadedVertices[k].Normal.Z;
 
 			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
