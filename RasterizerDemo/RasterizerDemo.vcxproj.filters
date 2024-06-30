@@ -60,7 +60,7 @@
     <ClCompile Include="RenderTargetD3D11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IndexBuffer.cpp">
+    <ClCompile Include="IndexBufferD3D11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InputLayoutD3D11.cpp">
