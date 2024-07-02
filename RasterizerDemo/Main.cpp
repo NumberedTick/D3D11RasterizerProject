@@ -61,8 +61,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11VertexShader* vShader;
 	ID3D11PixelShader* pShader;
 	ID3D11InputLayout* inputLayout;
-	//ID3D11Buffer* vertexBuffer;
-	//ID3D11Buffer* indexBuffer;
 	ID3D11Buffer* constantBufferVertex;
 	ID3D11Buffer* constantLightBuffer;
 	ID3D11Buffer* constantMaterialBuffer;
@@ -176,8 +174,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	texture->Release();
 	srv->Release();
 	samplerState->Release();
-	//vertexBuffer->Release();
-	//indexBuffer->Release();
 	for (int i = 0; i < nrModels; ++i)
 	{
 		delete vBuffer[i];
