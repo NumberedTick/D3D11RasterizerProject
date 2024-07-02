@@ -181,7 +181,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	for (int i = 0; i < nrModels; ++i)
 	{
 		delete vBuffer[i];
+		delete iBuffer[i];
 	}
+
+	delete[] vBuffer;
+	delete[] iBuffer;
+
 	constantBufferVertex->Release();
 	constantLightBuffer->Release();
 	constantMaterialBuffer->Release();
