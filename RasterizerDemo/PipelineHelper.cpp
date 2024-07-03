@@ -281,7 +281,7 @@ bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture)
 	return !FAILED(hr);
 }
 
-bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11RenderTargetView*& gBufferRtv, ID3D11ShaderResourceView*& gBufferSrv, UINT width, UINT height)
+bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11RenderTargetView*& gBufferRtv,ID3D11ShaderResourceView*& gBufferSrv, UINT width, UINT height)
 {
 	D3D11_TEXTURE2D_DESC textDesc;
 	textDesc.Width = width;
@@ -308,14 +308,6 @@ bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11Render
 		return false;
 	}
 
-	hr = device->CreateShaderResourceView(gBuffer, nullptr, &gBufferSrv);
-
-	if (FAILED(hr))
-	{
-		std::cerr << "Error Creating G-Buffer SRV" << std::endl;
-		return false;
-	}
-
 	hr = device->CreateRenderTargetView(gBuffer, nullptr, &gBufferRtv);
 
 	if (FAILED(hr))
@@ -324,9 +316,19 @@ bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11Render
 		return false;
 	}
 
+	hr = device->CreateShaderResourceView(gBuffer, nullptr, &gBufferSrv);
+
+	if (FAILED(hr))
+	{
+		std::cerr << "Error Creating G-Buffer SRV" << std::endl;
+		return false;
+	}
+
 	return !FAILED(hr);
 	
 }
+
+
 
 bool CreateSRV(ID3D11Device* device, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv) 
 {
@@ -448,8 +450,7 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
-	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames,
-	ID3D11Texture2D*& gBuffer , ID3D11RenderTargetView*& gBufferRtv, ID3D11ShaderResourceView*& gBufferSrv,UINT width, UINT height)
+	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
@@ -517,12 +518,6 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	if (!CreateCameraBuffer(device, constantCameraBuffer))
 	{
 		std::cerr << "Error creating Constant Buffer for Camera position!" << std::endl;
-		return false;
-	}
-
-	if (!CreateGBuffer(device, gBuffer, gBufferRtv, gBufferSrv, width, height))
-	{
-		std::cerr << "Error creating G-Buffer!" << std::endl;
 		return false;
 	}
 	// Binding to the Vertex Shader and the Pixel Shader

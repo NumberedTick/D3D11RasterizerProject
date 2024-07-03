@@ -8,6 +8,13 @@ struct PixelShaderInput
 	float2 uvcoords : UVCOORDS;
 };
 
+struct PixelShaderOutput
+{
+    float4 position : SV_Target0;
+    float4 colour : SV_Target1;
+    float4 normal : SV_Target2;
+};
+
 cbuffer LightBuffer : register(b1)
 {
 	float4 lightPosition;
@@ -30,6 +37,19 @@ cbuffer cameraPosition : register(b3)
 	float4 cameraPosition;
 };
 
+PixelShaderOutput main(PixelShaderInput input)
+{
+    PixelShaderOutput output;
+	
+    output.colour = textureMap.Sample(samplerState, input.uvcoords);
+    output.normal = float4(input.normal, 0);
+    output.position = input.position;
+	
+    return output;
+};
+
+//Temp disable output
+/*
 float4 main(PixelShaderInput input) : SV_TARGET
 {
 	// Texture sampling
@@ -60,3 +80,4 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
 	return finalColor;
 }
+*/

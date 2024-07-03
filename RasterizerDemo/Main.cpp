@@ -11,7 +11,7 @@
 #include "IndexBufferD3D11.h"
 #include "VertexBufferD3D11.h"
 
-void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
+void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, IndexBufferD3D11*& indexBuffer)
 {
@@ -29,7 +29,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView* rtv,
 	immediateContext->VSSetShader(vShader, nullptr, 0);
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
-	immediateContext->OMSetRenderTargets(1, &rtv, dsView);
+	immediateContext->OMSetRenderTargets(3, rtvArr, dsView);
 
 
 	immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
@@ -60,6 +60,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	D3D11_VIEWPORT viewport;
 	ID3D11VertexShader* vShader;
 	ID3D11PixelShader* pShader;
+	//ID3D11ComputeShader* cShader;
 	ID3D11InputLayout* inputLayout;
 	ID3D11Buffer* constantBufferVertex;
 	ID3D11Buffer* constantLightBuffer;
@@ -67,9 +68,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* constantCameraBuffer;
 	ID3D11Texture2D* texture;
 	ID3D11ShaderResourceView* srv;
-	ID3D11Texture2D* gBuffer;
-	ID3D11RenderTargetView* gBufferRtv;
-	ID3D11ShaderResourceView* gBufferSrv;
 	ID3D11SamplerState* samplerState;
 
 	// Loads Models into the scene
@@ -102,11 +100,33 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames,  gBuffer, gBufferRtv, gBufferSrv, WIDTH, HEIGHT))
+	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
 	}
+
+
+	// Creationg of the GBuffers
+
+	const unsigned int nrOfGBuffers = 3;
+
+	ID3D11Texture2D** gBuffer = new ID3D11Texture2D*[nrOfGBuffers];
+	ID3D11ShaderResourceView** gBufferSrv = new ID3D11ShaderResourceView*[nrOfGBuffers];
+	ID3D11RenderTargetView** gBufferRtv = new ID3D11RenderTargetView*[nrOfGBuffers];
+	ID3D11RenderTargetView* rtvArr[nrOfGBuffers];
+
+	for(int i = 0; i < nrOfGBuffers; ++i)
+	{
+		if (!CreateGBuffer(device, gBuffer[i], gBufferRtv[i], gBufferSrv[i], WIDTH, HEIGHT))
+		{
+			std::cerr << "Error creating G-Buffer!" << std::endl;
+			return false;
+		}
+
+		rtvArr[i] = gBufferRtv[i];
+	}
+	
 
 	MSG msg = { };
 
@@ -142,10 +162,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		float clearColour[4] = { 0, 0, 0, 0 };
 		immediateContext->ClearRenderTargetView(rtv, clearColour);
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+		
 		for (int i = 0; i < nrModels; i++)
 		{
-			Render(immediateContext, rtv, dsView, dsState, viewport, vShader, pShader, inputLayout, vBuffer[i], iBuffer[i]);
+			Render(immediateContext, rtvArr, dsView, dsState, viewport, vShader, pShader, inputLayout, vBuffer[i], iBuffer[i]);
 		}
+
+		for (int i = 0; i < nrOfGBuffers; ++i)
+		{
+			rtvArr[i] = nullptr;
+		}
+		
 		swapChain->Present(0, 0);
 
 		// End time for chorno for the time to render a frame and the total time to render a frame
@@ -172,6 +199,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	texture->Release();
+
+	for (int i = 0; i < nrOfGBuffers; ++i)
+	{
+		gBuffer[i]->Release();
+		gBufferRtv[i]->Release();
+		gBufferSrv[i]->Release();
+	}
+
+	delete[] gBuffer;
+	delete[] gBufferRtv;
+	delete[] gBufferSrv;
+
 	srv->Release();
 	samplerState->Release();
 	for (int i = 0; i < nrModels; ++i)
