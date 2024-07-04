@@ -30,7 +30,6 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->OMSetRenderTargets(3, rtvArr, dsView);
-	immediateContext->CSSetShader(cShader, nullptr, 0);
 
 
 	immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
@@ -161,6 +160,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->Unmap(constantBufferVertex, 0);
 		
 		// Rendering
+		for (int i = 0; i < nrOfGBuffers; ++i)
+		{
+			immediateContext->ClearRenderTargetView(rtvArr[i], clearColour);
+		}
 		immediateContext->ClearRenderTargetView(rtv, clearColour);
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 		
@@ -169,17 +172,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			Render(immediateContext, rtvArr, dsView, dsState, viewport, vShader, pShader, cShader ,inputLayout, vBuffer[i], iBuffer[i]);
 		}
 
-		for (int i = 0; i < nrOfGBuffers; ++i)
-		{
+		ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+		immediateContext->OMSetRenderTargets(1, nullRTV, nullptr);
 
-			rtvArr[i] = nullptr;
-		}
 
-		immediateContext->CSSetShaderResources(0, 3, srvArr);
+		immediateContext->CSSetShader(cShader, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		immediateContext->CSSetShaderResources(0, 3, srvArr);
 		immediateContext->Dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
-		//immediateContext->OMSetRenderTargets(3, rtvArr, dsVi);
+
+		ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+
+		immediateContext->CSSetShaderResources(0, 1, nullSRV);
+
 		swapChain->Present(0, 0);
 
 		// End time for chorno for the time to render a frame and the total time to render a frame

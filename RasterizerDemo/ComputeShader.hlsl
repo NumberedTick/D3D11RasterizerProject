@@ -14,6 +14,6 @@ void main( uint3 DTid:SV_DispatchThreadID)
     
     
     
-    backBufferUAV[DTid.xy] = float4(normal, 1);
+    backBufferUAV[DTid.xy] = float4(colour, 1);
 
 }
