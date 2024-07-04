@@ -30,6 +30,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->OMSetRenderTargets(3, rtvArr, dsView);
+	//immediateContext->CSSetShader(cShader, nullptr, 0);
 
 
 	immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
@@ -60,7 +61,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	D3D11_VIEWPORT viewport;
 	ID3D11VertexShader* vShader;
 	ID3D11PixelShader* pShader;
-	//ID3D11ComputeShader* cShader;
+	ID3D11ComputeShader* cShader;
 	ID3D11InputLayout* inputLayout;
 	ID3D11Buffer* constantBufferVertex;
 	ID3D11Buffer* constantLightBuffer;
@@ -100,12 +101,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames))
+	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, cShader,inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
 	}
-
 
 	// Creationg of the GBuffers
 
@@ -229,6 +229,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	inputLayout->Release();
 	pShader->Release();
 	vShader->Release();
+	cShader->Release();
 	dsView->Release();
 	dsTexture->Release();
 	rtv->Release();

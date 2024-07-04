@@ -15,7 +15,7 @@
 
 using namespace DirectX;
 
-bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, std::string& vShaderByteCode)
+bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,std::string& vShaderByteCode)
 {
 	std::string shaderData;
 	std::ifstream reader;
@@ -59,6 +59,28 @@ bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11Pixel
 	if (FAILED(device->CreatePixelShader(shaderData.c_str(), shaderData.length(), nullptr, &pShader)))
 	{
 		std::cerr << "Failed to create pixel shader!" << std::endl;
+		return false;
+	}
+
+	shaderData.clear();
+	reader.close();
+	reader.open("ComputeShader.cso", std::ios::binary | std::ios::ate);
+	if (!reader.is_open())
+	{
+		std::cerr << "Could not open CS file!" << std::endl;
+		return false;
+	}
+
+	reader.seekg(0, std::ios::end);
+	shaderData.reserve(static_cast<unsigned int>(reader.tellg()));
+	reader.seekg(0, std::ios::beg);
+
+	shaderData.assign((std::istreambuf_iterator<char>(reader)),
+		std::istreambuf_iterator<char>());
+
+	if (FAILED(device->CreateComputeShader(shaderData.c_str(), shaderData.length(), nullptr, &cShader)))
+	{
+		std::cerr << "Failed to create compute shader!" << std::endl;
 		return false;
 	}
 
@@ -448,12 +470,12 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 }
 
 bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
-	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
+	ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames)
 {
 	std::string vShaderByteCode;
-	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
+	if (!LoadShaders(device, vShader, pShader, cShader,vShaderByteCode))
 	{
 		std::cerr << "Error loading shaders!" << std::endl;
 		return false;
