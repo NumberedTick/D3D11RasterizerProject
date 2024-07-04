@@ -1,6 +1,7 @@
 #include "PipelineHelper.h"
 #include <DirectXMath.h>
 #include "MeshD3D11.h"
+#include "VertexBufferD3D11.h"
 #include "IndexBufferD3D11.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -80,9 +81,9 @@ bool CreateInputLayout(ID3D11Device* device, ID3D11InputLayout*& inputLayout, co
 
 // Function to create a world matrix with a new angle
 // Used mostly for the rotation
-XMMATRIX CreateWorldMatrix(float angle)
+XMMATRIX CreateWorldMatrix(float angle, float xDist)
 {
-	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f,0.0f,-1.0f);
+	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, -1.0+xDist);
 	XMMATRIX rotationMatrix = XMMatrixRotationY(angle);
 	XMMATRIX worldMatrix = XMMatrixMultiply(translationMatrix, rotationMatrix);
 	return worldMatrix;
@@ -94,8 +95,8 @@ XMMATRIX CreatViewPerspectiveMatrix()
 	XMVECTOR focusPoint = { 0.0f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
 	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.0f };
-	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
-	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 3.0f, 1024.0f / 576.0f, 1.0f, 10.0f);
+	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection); 
+	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2.5f, 1024.0f / 576.0f, 0.1f, 1000.0f);
 	XMMATRIX viewAndPerspectiveMatrix = XMMatrixMultiply(viewMatrix, perspectiveFovMatrix);
 
 	return viewAndPerspectiveMatrix;
@@ -120,9 +121,9 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
 			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
 
-			Vertex.norm[0] = objLoader.LoadedVertices[k].Normal.X;
-			Vertex.norm[1] = objLoader.LoadedVertices[k].Normal.Y;
-			Vertex.norm[2] = objLoader.LoadedVertices[k].Normal.Z;
+			Vertex.norm[0] = -objLoader.LoadedVertices[k].Normal.X;
+			Vertex.norm[1] = -objLoader.LoadedVertices[k].Normal.Y;
+			Vertex.norm[2] = -objLoader.LoadedVertices[k].Normal.Z;
 
 			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
 			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
@@ -133,7 +134,7 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 	return true;
 }
 
-bool LoadIndex(std::string& modleName, std::vector<unsigned int>& indices)
+bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 {
 	objl::Loader objLoader;
 	bool objFileCheck = objLoader.LoadFile(modleName);
@@ -152,22 +153,24 @@ bool LoadIndex(std::string& modleName, std::vector<unsigned int>& indices)
 
 	}
 
-	// Swaps every second and thrid element in the vector due to the OBJ parder being made for OpenGLs left handed rendering
-
+	// Swaps every second and thrid element in the vector due to the OBJ parder being made for OpenGLs right handed rendering
+	/*
 	for (int i = 0; i < objLoader.LoadedIndices.size() / 3; ++i)
 	{
 		int temp = indices[3 * i + 1];
 		indices[3 * i + 1] = indices[3 * i + 2];
 		indices[3 * i + 2] = temp;
 	}
-	
+	*/
+
+
 }
 
 
 bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
-	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f);
+	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f, 0.0f);
 	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix();
 
 	// Adding the two matrixes into one array
@@ -194,87 +197,70 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 }
 
 // Creation of the Vertex Buffer
-bool CreateVertexBuffer(ID3D11Device* device, ID3D11Buffer*& vertexBuffer) 
+bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuffer, std::vector<std::string>& modelNames)
 {
-	std::vector<SimpleVertex> Vertices;
-	std::string modelName = "monkey.obj";
-
-	if (!LoadVertexs(modelName, Vertices))
+	
+	for (int i = 0; i < modelNames.size(); i++) 
 	{
-		return false;
+		std::vector<SimpleVertex> Vertices;
+
+
+
+		if (!LoadVertexs(modelNames[i], Vertices))
+		{
+			return false;
+		}
+
+
+		testVertexBuffer[i]->Initialize(device, sizeof(SimpleVertex), Vertices.size(), Vertices.data());
+		// Buffer des for vertex Buffer
+
+		if (testVertexBuffer[i]->GetBuffer() == nullptr)
+			return false;
 	}
 
-	
-	// Buffer des for vertex Buffer
-	D3D11_BUFFER_DESC bufferDesc; 
-	bufferDesc.ByteWidth = sizeof(SimpleVertex)*Vertices.size();
-	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	bufferDesc.StructureByteStride = 0;
-
-
-	// Data for the bufferDesc
-	D3D11_SUBRESOURCE_DATA data; 
-	data.pSysMem = Vertices.data();
-	data.SysMemPitch = 0;
-	data.SysMemSlicePitch = 0;
-
-	// Creation of Vertex Buffer
-	HRESULT hr = device->CreateBuffer(&bufferDesc, &data, &vertexBuffer);
-
-	return !FAILED(hr);
+	return true;
 }
 
-bool CreateIndexBuffer(ID3D11Device* device, ID3D11Buffer*& indexBuffer, std::vector<unsigned int>& indices)
+bool CreateIndexBuffer(ID3D11Device* device, IndexBufferD3D11**& testIndexBuffer, std::vector<std::string>& modelNames)
 {
-	//MeshData meshData; 
-	//meshData.indexInfo.nrOfIndicesInBuffer = objLoader.LoadedIndices.size();
-	
-	std::string modelName = "monkey.obj";
-	
-	std::vector<unsigned int> tempIndices = indices;
+	std::vector<unsigned int> indices;
 
-	if (!LoadIndex(modelName, indices))
+	for (int i = 0; i < modelNames.size(); i++)
 	{
-		return false;
+		if (!LoadIndices(modelNames[i], indices))
+		{
+			return false;
+		}
+
+		testIndexBuffer[i]->Initialize(device, indices.size(), indices.data());
+
+		if (testIndexBuffer[i]->GetBuffer() == nullptr)
+		{
+			return false;
+		}
 	}
+	
 
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth = sizeof(unsigned int)* indices.size();
-	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferDesc.BindFlags= D3D11_BIND_INDEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	bufferDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = indices.data();
-	data.SysMemPitch = 0;
-	data.SysMemSlicePitch = 0;
-
-	HRESULT hr = device->CreateBuffer(&bufferDesc, &data, &indexBuffer);
-
-	return !FAILED(hr);
+	return true;
 }
 
 
 bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture) 
 {
 	// Loading the texture
-	int width, height, numChannels;
-	unsigned char* imageData = stbi_load("texture.jpg", &width, &height, &numChannels, 4); 
+	int textureWidth, textureHeight, numChannels;
+	unsigned char* imageData = stbi_load("texture.jpg", &textureWidth, &textureHeight, &numChannels, 4);
 	
-	// Creating nesicary sampler for the textrue 2d desc
+	// Creating nesicary sampler for the texture 2d desc
 	DXGI_SAMPLE_DESC TextureSampleDesc;
 	TextureSampleDesc.Count = 1;
 	TextureSampleDesc.Quality = 0;
 
-	// Textrue 2D description
+	// texture 2D description
 	D3D11_TEXTURE2D_DESC Tex2DDesc;
-	Tex2DDesc.Width = width;
-	Tex2DDesc.Height = height;
+	Tex2DDesc.Width = textureWidth;
+	Tex2DDesc.Height = textureHeight;
 	Tex2DDesc.MipLevels = 1;
 	Tex2DDesc.ArraySize = 1;
 	Tex2DDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -287,13 +273,62 @@ bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture)
 	// Data for the texture 2D
 	D3D11_SUBRESOURCE_DATA Tex2DData;
 	Tex2DData.pSysMem = imageData;
-	Tex2DData.SysMemPitch = width*(numChannels+1);
+	Tex2DData.SysMemPitch = textureWidth*(numChannels+1);
 	Tex2DData.SysMemSlicePitch = 0;
 
 	// Creation of the Texture2D
 	HRESULT hr = device->CreateTexture2D(&Tex2DDesc, &Tex2DData, &texture);
 	return !FAILED(hr);
 }
+
+bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11RenderTargetView*& gBufferRtv,ID3D11ShaderResourceView*& gBufferSrv, UINT width, UINT height)
+{
+	D3D11_TEXTURE2D_DESC textDesc;
+	textDesc.Width = width;
+	textDesc.Height = height;
+	textDesc.MipLevels = 1;
+	textDesc.ArraySize = 1;
+	textDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	textDesc.SampleDesc.Count = 1;
+	textDesc.SampleDesc.Quality = 0;
+	textDesc.Usage = D3D11_USAGE_DEFAULT;
+	textDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+	textDesc.CPUAccessFlags = 0;
+	textDesc.MiscFlags = 0;
+
+	gBuffer = nullptr;
+	gBufferRtv = nullptr;
+	gBufferSrv = nullptr;
+
+	HRESULT hr = device->CreateTexture2D(&textDesc, nullptr, &gBuffer);
+
+	if (FAILED(hr))
+	{
+		std::cerr << "Error Creating G-Buffer Texture" << std::endl;
+		return false;
+	}
+
+	hr = device->CreateRenderTargetView(gBuffer, nullptr, &gBufferRtv);
+
+	if (FAILED(hr))
+	{
+		std::cerr << "Error Creating G-Buffer RTV" << std::endl;
+		return false;
+	}
+
+	hr = device->CreateShaderResourceView(gBuffer, nullptr, &gBufferSrv);
+
+	if (FAILED(hr))
+	{
+		std::cerr << "Error Creating G-Buffer SRV" << std::endl;
+		return false;
+	}
+
+	return !FAILED(hr);
+	
+}
+
+
 
 bool CreateSRV(ID3D11Device* device, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv) 
 {
@@ -412,10 +447,10 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 
 }
 
-bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,  ID3D11VertexShader*& vShader,
+bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
-	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<unsigned int>& indices)
+	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
@@ -438,13 +473,13 @@ bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buff
 	}
 
 
-	if (!CreateVertexBuffer(device, vertexBuffer))
+	if (!CreateVertexBuffer(device, vertexBuffer, modelNames))
 	{
 		std::cerr << "Error creating vertex buffer!" << std::endl;
 		return false;
 	}
 	
-	if (!CreateIndexBuffer(device, indexBuffer, indices))
+	if (!CreateIndexBuffer(device, indexBuffer, modelNames))
 	{
 		std::cerr << "Error creating index buffer!" << std::endl;
 		return false;
@@ -485,7 +520,6 @@ bool SetupPipeline(ID3D11Device* device, ID3D11Buffer*& vertexBuffer, ID3D11Buff
 		std::cerr << "Error creating Constant Buffer for Camera position!" << std::endl;
 		return false;
 	}
-
 	// Binding to the Vertex Shader and the Pixel Shader
 
 	deviceContext->VSSetConstantBuffers(0, 1, &constantBufferVertex);

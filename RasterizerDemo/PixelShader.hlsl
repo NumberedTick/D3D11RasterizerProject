@@ -8,6 +8,13 @@ struct PixelShaderInput
 	float2 uvcoords : UVCOORDS;
 };
 
+struct PixelShaderOutput
+{
+    float4 position : SV_Target0;
+    float4 colour : SV_Target1;
+    float4 normal : SV_Target2;
+};
+
 cbuffer LightBuffer : register(b1)
 {
 	float4 lightPosition;
@@ -30,6 +37,19 @@ cbuffer cameraPosition : register(b3)
 	float4 cameraPosition;
 };
 
+PixelShaderOutput main(PixelShaderInput input)
+{
+    PixelShaderOutput output;
+	
+    output.colour = textureMap.Sample(samplerState, input.uvcoords);
+    output.normal = float4(input.normal, 0);
+    output.position = input.position;
+	
+    return output;
+};
+
+//Temp disable output
+/*
 float4 main(PixelShaderInput input) : SV_TARGET
 {
 	// Texture sampling
@@ -48,13 +68,10 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	float4 diffuseFinal = lightColor * quadIntensity * normalCheck * diffuseRGBA;
 
 	// Specular Highlight Calculation
-	float4 cameraDirectionVector = cameraPosition - input.position;
-	float4 cameraVector = (1 / length(cameraDirectionVector)) * cameraDirectionVector;
-	float4 newLightDirection = lightPosition - input.position;
-	float4 newLightVectore = (1 / length(newLightDirection)) * newLightDirection;
-	float4 reflectionVector = reflect(-newLightVectore, float4(input.normal,0.0f));
-	reflectionVector = (1 / length(reflectionVector)) * reflectionVector;
-	float specularIntensity = pow(max(dot(reflectionVector, cameraVector), 0), specularPower);
+    float4 cameraDirectionVector = cameraPosition - input.position;
+    float4 cameraVector = (1 / length(cameraDirectionVector)) * cameraDirectionVector; // v
+    float4 halfVector = (lightVector + cameraVector) / (length(lightVector + cameraVector)); // h
+    float specularIntensity = pow(max(dot(input.normal, halfVector.xyz), 0), specularPower);
 
 	float4 specularFinal = lightColor * specularRGBA * specularIntensity;
 
@@ -63,3 +80,4 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
 	return finalColor;
 }
+*/
