@@ -13,7 +13,7 @@
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-			ID3D11PixelShader* pShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, IndexBufferD3D11*& indexBuffer)
+			ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader,ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, IndexBufferD3D11*& indexBuffer)
 {
 
 
@@ -30,7 +30,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->OMSetRenderTargets(3, rtvArr, dsView);
-	//immediateContext->CSSetShader(cShader, nullptr, 0);
+	immediateContext->CSSetShader(cShader, nullptr, 0);
 
 
 	immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
@@ -70,6 +70,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Texture2D* texture;
 	ID3D11ShaderResourceView* srv;
 	ID3D11SamplerState* samplerState;
+	ID3D11UnorderedAccessView* uav;
 
 	// Loads Models into the scene
 	std::vector<std::string> modelNames;
@@ -92,10 +93,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 	// Leftover vertex buffers from testing, REMOVE WHEN ARRAY WORKS
-	//VertexBufferD3D11 testVertexBuffer;
-	IndexBufferD3D11 testIndexBuffer;
-
-	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, dsTexture, dsView, dsState, viewport))
+	
+	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, uav,dsTexture, dsView, dsState, viewport))
 	{
 		std::cerr << "Failed to setup d3d11!" << std::endl;
 		return -1;
@@ -115,6 +114,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11ShaderResourceView** gBufferSrv = new ID3D11ShaderResourceView*[nrOfGBuffers];
 	ID3D11RenderTargetView** gBufferRtv = new ID3D11RenderTargetView*[nrOfGBuffers];
 	ID3D11RenderTargetView* rtvArr[nrOfGBuffers];
+	ID3D11ShaderResourceView* srvArr[nrOfGBuffers];
 
 	for(int i = 0; i < nrOfGBuffers; ++i)
 	{
@@ -125,6 +125,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 
 		rtvArr[i] = gBufferRtv[i];
+		srvArr[i] = gBufferSrv[i];
 	}
 	
 
@@ -138,6 +139,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	float xDist = 0.0f;
 
+	float clearColour[4] = { 0, 0, 0, 0 };
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
@@ -159,20 +161,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->Unmap(constantBufferVertex, 0);
 		
 		// Rendering
-		float clearColour[4] = { 0, 0, 0, 0 };
 		immediateContext->ClearRenderTargetView(rtv, clearColour);
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 		
-		for (int i = 0; i < nrModels; i++)
+		for (int i = 0; i < nrModels; ++i)
 		{
-			Render(immediateContext, rtvArr, dsView, dsState, viewport, vShader, pShader, inputLayout, vBuffer[i], iBuffer[i]);
+			Render(immediateContext, rtvArr, dsView, dsState, viewport, vShader, pShader, cShader ,inputLayout, vBuffer[i], iBuffer[i]);
 		}
 
 		for (int i = 0; i < nrOfGBuffers; ++i)
 		{
+
 			rtvArr[i] = nullptr;
 		}
-		
+
+		immediateContext->CSSetShaderResources(0, 3, srvArr);
+		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		immediateContext->Dispatch(WIDTH / 8, HEIGHT / 8, 1);
+
+		//immediateContext->OMSetRenderTargets(3, rtvArr, dsVi);
 		swapChain->Present(0, 0);
 
 		// End time for chorno for the time to render a frame and the total time to render a frame
