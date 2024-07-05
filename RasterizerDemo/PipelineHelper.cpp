@@ -542,16 +542,16 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		std::cerr << "Error creating Constant Buffer for Camera position!" << std::endl;
 		return false;
 	}
-	// Binding to the Vertex Shader and the Pixel Shader
+	// Binding the necessary Buffers and Resources to the diffrent shaders
 
 	deviceContext->VSSetConstantBuffers(0, 1, &constantBufferVertex);
 	deviceContext->PSSetShaderResources(0, 1, &srv);
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
 
-	ID3D11Buffer* bufferArray[2] = { constantLightBuffer, constantMaterialBuffer };
-	deviceContext->PSSetConstantBuffers(1, 2, bufferArray);
+	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
+	deviceContext->CSSetConstantBuffers(0, 3, bufferArray);
 
-	deviceContext->PSSetConstantBuffers(3, 1, &constantCameraBuffer);
+	//deviceContext->PSSetConstantBuffers(3, 1, &constantCameraBuffer);
 
 	return true;
 }
