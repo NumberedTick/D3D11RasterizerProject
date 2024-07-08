@@ -74,11 +74,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Loads Models into the scene
 	std::vector<std::string> modelNames;
 
-	modelNames.push_back("monkey.obj");
+	
 	modelNames.push_back("room.obj");
+	modelNames.push_back("monkey.obj");
+	//modelNames.push_back("untitled.obj");
 	//modelNames.push_back("untitled1.obj");
 
 	UINT nrModels = static_cast<UINT>(modelNames.size());
+
+	// Loads textures
+	
+	std::vector<std::string> textureNames;
+	textureNames.push_back("texture.jpg");
+	textureNames.push_back("texture2.png");
+
+	std::string missingTexture = "missing.jpg";
 	// Creates VertexBuffers for each model loaded (currently doing it manually)
 	VertexBufferD3D11** vBuffer = new VertexBufferD3D11*[nrModels];
 	
@@ -90,8 +100,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		iBuffer[i] = new IndexBufferD3D11;
 	}
 
-
-	// Leftover vertex buffers from testing, REMOVE WHEN ARRAY WORKS
 	
 	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, uav,dsTexture, dsView, dsState, viewport))
 	{
@@ -127,6 +135,44 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		srvArr[i] = gBufferSrv[i];
 	}
 	
+	// Creation of the needed textures for each model
+	ID3D11Texture2D** modelTextures = new ID3D11Texture2D* [nrModels];
+	ID3D11ShaderResourceView** srvModelTextures = new ID3D11ShaderResourceView* [nrModels];
+	for (int i = 0; i < nrModels; ++i)
+	{
+		if (i < textureNames.size()) 
+		{
+			if (!Create2DTexture(device, modelTextures[i], textureNames[i]))
+			{
+				std::cerr << "Failed to create 2DTexture for model!" << std::endl;
+				return -1;
+			}
+
+			if (!CreateSRV(device, modelTextures[i], srvModelTextures[i]))
+			{
+				std::cerr << "Failed to create SRV for model texture!" << std::endl;
+				return -1;
+			}
+		}
+		else // only used to create missing texture if there are more models than textures,
+		{
+			if (!Create2DTexture(device, modelTextures[i], missingTexture))
+			{
+				std::cerr << "Failed to create 2DTexture for missing texture!" << std::endl;
+				return -1;
+			}
+
+			if (!CreateSRV(device, modelTextures[i], srvModelTextures[i]))
+			{
+				std::cerr << "Failed to create SRV for model texture!" << std::endl;
+				return -1;
+			}
+		}
+		
+	}
+	
+
+
 
 	MSG msg = { };
 
@@ -139,6 +185,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	float xDist = 0.0f;
 
 	float clearColour[4] = { 0, 0, 0, 0 };
+
+
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
@@ -160,6 +208,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->Unmap(constantBufferVertex, 0);
 		
 		// Rendering
+
+		// Cleararing from last frame
 		for (int i = 0; i < nrOfGBuffers; ++i)
 		{
 			immediateContext->ClearRenderTargetView(rtvArr[i], clearColour);
@@ -167,15 +217,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->ClearRenderTargetView(rtv, clearColour);
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 		
+		// Gemoetry pass
 		for (int i = 0; i < nrModels; ++i)
 		{
+			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
 			Render(immediateContext, rtvArr, dsView, dsState, viewport, vShader, pShader, cShader ,inputLayout, vBuffer[i], iBuffer[i]);
 		}
-
+		// Unbinding GBuffer RTVs
 		ID3D11RenderTargetView* nullRTV[1] = { nullptr };
 		immediateContext->OMSetRenderTargets(1, nullRTV, nullptr);
 
-
+		// Shading pass
 		immediateContext->CSSetShader(cShader, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 		immediateContext->CSSetShaderResources(0, 3, srvArr);
@@ -195,7 +247,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Turning the time into a float and determning the amount of time for 1 full rotation
 		float timePerFrame = duration.count();
 		float timeForRotation = 7.5f;
+
 		float deltaTime = timePerFrame / timeForRotation;
+
 		// A check for to see if full rotation
 		if (rotationAmount >= XM_PI*2)
 		{
@@ -206,12 +260,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			xDist = 0.0f;
 		}
+
 		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time
 		rotationAmount += (deltaTime)*XM_2PI;
 		xDist += (deltaTime) * 0.5f;
 	}
 
-	texture->Release();
+	//texture->Release();
 
 	for (int i = 0; i < nrOfGBuffers; ++i)
 	{
@@ -224,16 +279,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	delete[] gBufferRtv;
 	delete[] gBufferSrv;
 
-	srv->Release();
+	//srv->Release();
 	samplerState->Release();
 	for (int i = 0; i < nrModels; ++i)
 	{
 		delete vBuffer[i];
 		delete iBuffer[i];
+		modelTextures[i]->Release();
+		srvModelTextures[i]->Release();
 	}
 
 	delete[] vBuffer;
 	delete[] iBuffer;
+	delete[] modelTextures;
+	delete[] srvModelTextures;
 
 	constantBufferVertex->Release();
 	constantLightBuffer->Release();

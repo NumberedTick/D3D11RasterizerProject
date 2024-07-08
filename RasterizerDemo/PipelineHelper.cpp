@@ -268,11 +268,12 @@ bool CreateIndexBuffer(ID3D11Device* device, IndexBufferD3D11**& testIndexBuffer
 }
 
 
-bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture) 
+bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture, std::string textureName) 
 {
 	// Loading the texture
+
 	int textureWidth, textureHeight, numChannels;
-	unsigned char* imageData = stbi_load("texture.jpg", &textureWidth, &textureHeight, &numChannels, 4);
+	unsigned char* imageData = stbi_load(textureName.c_str(), &textureWidth, &textureHeight, &numChannels, 4);
 	
 	// Creating nesicary sampler for the texture 2d desc
 	DXGI_SAMPLE_DESC TextureSampleDesc;
@@ -506,18 +507,22 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		std::cerr << "Error creating index buffer!" << std::endl;
 		return false;
 	}
-
+	/*
 	if (!Create2DTexture(device, texture))
 	{
 		std::cerr << "Error creating 2D Texture" << std::endl;
 		return false;
 	}
-
+	*/
+	
+	/*
 	if (!CreateSRV(device, texture, srv))
 	{
 		std::cerr << "Error creating Shader Resorse View!" << std::endl;
 		return false;
 	}
+	*/
+	
 
 	if (!CreateSampler(device, sampleState))
 	{
@@ -545,7 +550,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	// Binding the necessary Buffers and Resources to the diffrent shaders
 
 	deviceContext->VSSetConstantBuffers(0, 1, &constantBufferVertex);
-	deviceContext->PSSetShaderResources(0, 1, &srv);
+	//deviceContext->PSSetShaderResources(0, 1, &srv);
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
 
 	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
