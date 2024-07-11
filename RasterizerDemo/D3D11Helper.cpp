@@ -22,7 +22,7 @@ bool CreateInterfaces(ID3D11Device*& device, ID3D11DeviceContext*& immediateCont
 	swapChainDesc.SampleDesc.Count = 1;
 	swapChainDesc.SampleDesc.Quality = 0;
 
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_UNORDERED_ACCESS;
 	swapChainDesc.BufferCount = 1;
 	swapChainDesc.OutputWindow = window;
 	swapChainDesc.Windowed = true;
@@ -50,6 +50,21 @@ bool CreateRenderTargetView(ID3D11Device* device, IDXGISwapChain* swapChain, ID3
 	backBuffer->Release();
 	return !(FAILED(hr));
 
+}
+
+bool CreateUnorderedAccessView(ID3D11Device* device, IDXGISwapChain* swapChain, ID3D11UnorderedAccessView*& uav)
+{
+	ID3D11Texture2D* backBuffer = nullptr;
+
+	if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer))))
+	{
+		std::cerr << "Failed to get back buffer!" << std::endl;
+		return false;
+	}
+
+	HRESULT hr = device->CreateUnorderedAccessView(backBuffer, NULL, &uav);
+	backBuffer->Release();
+	return !(FAILED(hr));
 }
 
 bool CreateDepthStencil(ID3D11Device* device, UINT width, UINT height, ID3D11Texture2D*& dsTexture, ID3D11DepthStencilView*& dsView)
@@ -112,7 +127,7 @@ void SetViewport(D3D11_VIEWPORT& viewport, UINT width, UINT height)
 }
 
 bool SetupD3D11(UINT width, UINT height, HWND window, ID3D11Device*& device,
-	ID3D11DeviceContext*& immediateContext, IDXGISwapChain*& swapChain, ID3D11RenderTargetView*& rtv,
+	ID3D11DeviceContext*& immediateContext, IDXGISwapChain*& swapChain, ID3D11RenderTargetView*& rtv, ID3D11UnorderedAccessView*& uav,
 	ID3D11Texture2D*& dsTexture, ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState, D3D11_VIEWPORT& viewport)
 {
 	if (!CreateInterfaces(device, immediateContext, swapChain, width, height, window))
@@ -121,7 +136,16 @@ bool SetupD3D11(UINT width, UINT height, HWND window, ID3D11Device*& device,
 		return false;
 	}
 
+	
 	if (!CreateRenderTargetView(device, swapChain, rtv))
+	{
+		std::cerr << "Error creating rtv!" << std::endl;
+		return false;
+	}
+	
+	
+	
+	if (!CreateUnorderedAccessView(device, swapChain, uav))
 	{
 		std::cerr << "Error creating rtv!" << std::endl;
 		return false;
