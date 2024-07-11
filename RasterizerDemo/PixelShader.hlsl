@@ -15,27 +15,6 @@ struct PixelShaderOutput
     float4 normal : SV_Target2;
 };
 
-cbuffer LightBuffer : register(b1)
-{
-	float4 lightPosition;
-	float4 lightColor;
-	float lightIntensity;
-};
-
-cbuffer MaterialBuffer : register(b2)
-{
-	float4 ambientRGBA;
-	float4 diffuseRGBA;
-	float4 specularRGBA;
-	float ambientIntensity;
-	float padding;
-	float specularPower;
-};
-
-cbuffer cameraPosition : register(b3)
-{
-	float4 cameraPosition;
-};
 
 PixelShaderOutput main(PixelShaderInput input)
 {
@@ -52,11 +31,7 @@ PixelShaderOutput main(PixelShaderInput input)
 /*
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-	// Texture sampling
-	float4 texColor = textureMap.Sample(samplerState, input.uvcoords);
-
-	// Ambient Lighting Calculation
-	float4 ambientFinal = ambientRGBA * ambientIntensity;
+	
 
 	// Diffuse Lighting Calculation
 	float4 lightDirectionVector = lightPosition - input.position; 

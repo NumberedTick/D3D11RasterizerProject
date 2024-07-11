@@ -3,6 +3,7 @@
 #include "MeshD3D11.h"
 #include "VertexBufferD3D11.h"
 #include "IndexBufferD3D11.h"
+#include "CameraD3D11.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -15,7 +16,7 @@
 
 using namespace DirectX;
 
-bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, std::string& vShaderByteCode)
+bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,std::string& vShaderByteCode)
 {
 	std::string shaderData;
 	std::ifstream reader;
@@ -62,6 +63,28 @@ bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11Pixel
 		return false;
 	}
 
+	shaderData.clear();
+	reader.close();
+	reader.open("ComputeShader.cso", std::ios::binary | std::ios::ate);
+	if (!reader.is_open())
+	{
+		std::cerr << "Could not open CS file!" << std::endl;
+		return false;
+	}
+
+	reader.seekg(0, std::ios::end);
+	shaderData.reserve(static_cast<unsigned int>(reader.tellg()));
+	reader.seekg(0, std::ios::beg);
+
+	shaderData.assign((std::istreambuf_iterator<char>(reader)),
+		std::istreambuf_iterator<char>());
+
+	if (FAILED(device->CreateComputeShader(shaderData.c_str(), shaderData.length(), nullptr, &cShader)))
+	{
+		std::cerr << "Failed to create compute shader!" << std::endl;
+		return false;
+	}
+
 	return true;
 }
 
@@ -90,13 +113,10 @@ XMMATRIX CreateWorldMatrix(float angle, float xDist)
 }
 
 // Function for creating a view+perspective matrix in world space
-XMMATRIX CreatViewPerspectiveMatrix()
+XMMATRIX CreatViewPerspectiveMatrix(XMVECTOR focusPoint, XMVECTOR upDirection, XMVECTOR eyePosition, float fovAngleY, float aspectRatio, float nearZ, float farZ)
 {
-	XMVECTOR focusPoint = { 0.0f, 0.0f, 1.0f };
-	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
-	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.0f };
 	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection); 
-	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2.5f, 1024.0f / 576.0f, 0.1f, 1000.0f);
+	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
 	XMMATRIX viewAndPerspectiveMatrix = XMMatrixMultiply(viewMatrix, perspectiveFovMatrix);
 
 	return viewAndPerspectiveMatrix;
@@ -170,8 +190,15 @@ bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
+	XMVECTOR focusPoint = { 0.0f, 0.0f, 1.0f };
+	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
+	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.0f };
+	float fovAgnleY = XM_PI / 2.5f;
+	float aspectRatio = 1024.0f / 576.0f;
+	float nearZ = 0.1f;
+	float farZ = 1000.0f;
 	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f, 0.0f);
-	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix();
+	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(focusPoint, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
 
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array[2];
@@ -246,11 +273,12 @@ bool CreateIndexBuffer(ID3D11Device* device, IndexBufferD3D11**& testIndexBuffer
 }
 
 
-bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture) 
+bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture, std::string textureName) 
 {
 	// Loading the texture
+
 	int textureWidth, textureHeight, numChannels;
-	unsigned char* imageData = stbi_load("texture.jpg", &textureWidth, &textureHeight, &numChannels, 4);
+	unsigned char* imageData = stbi_load(textureName.c_str(), &textureWidth, &textureHeight, &numChannels, 4);
 	
 	// Creating nesicary sampler for the texture 2d desc
 	DXGI_SAMPLE_DESC TextureSampleDesc;
@@ -447,13 +475,87 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 
 }
 
+bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV)
+{
+	//bool hasSRV = false;
+	D3D11_TEXTURE2D_DESC desc; 
+	ZeroMemory(&desc, sizeof(desc));
+	desc.Width = 512;
+	desc.Height = 512;
+	desc.MipLevels = 1;
+	desc.ArraySize = 6;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags = 0;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+	HRESULT hr = device->CreateTexture2D(&desc, nullptr, &cubeMapTexture);
+	if (FAILED(hr))
+	{
+		return FAILED(hr);
+	}
+
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+	rtvDesc.Texture2DArray.ArraySize = 1; 
+	rtvDesc.Texture2DArray.MipSlice = 0;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		rtvDesc.Texture2DArray.FirstArraySlice = i;
+		hr = device->CreateRenderTargetView(cubeMapTexture, &rtvDesc, &cubeMapRTVArray[i]);
+
+		if (FAILED(hr))
+		{
+			return FAILED(hr);
+		}
+	}
+
+	hr = device->CreateShaderResourceView(cubeMapTexture, nullptr, &cubeMapSRV);
+
+	if (FAILED(hr))
+	{
+		return FAILED(hr);
+	}
+	return true;
+}
+
+bool CreateVirtualCameras()
+{
+	ProjectionInfo projectionInfo;
+	projectionInfo.fovAngleY = XM_PIDIV2;
+	projectionInfo.aspectRatio = 1.0f;
+	projectionInfo.nearZ = 0.1f;
+	projectionInfo.farZ = 100.0f;
+	float upRotations[6] = { XM_PIDIV2, -XM_PIDIV2, 0.0f, 0.0f, 0.0f, XM_PI };
+	float rightRotation[6] = { 0.0f, 0.0f, -XM_PIDIV2 , XM_PIDIV2 , 0.0f, 0.0f };
+
+	return false;
+}
+
+enum TEXTURE_CUBE_FACE_INDEX
+{
+	POSITIVE_X = 0,
+	NEGATIVE_X = 1,
+	POSITIVE_Y = 2,
+	NEGATIVE_Y = 3,
+	POSITIVE_Z = 4,
+	NEGATIVE_Z = 5
+};
+
+
 bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
-	ID3D11PixelShader*& pShader, ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
+	ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
-	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv, ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames)
+	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray,ID3D11ShaderResourceView*& cubeMapSrv, 
+	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames,	UINT width, UINT height)
 {
 	std::string vShaderByteCode;
-	if (!LoadShaders(device, vShader, pShader, vShaderByteCode))
+	if (!LoadShaders(device, vShader, pShader, cShader,vShaderByteCode))
 	{
 		std::cerr << "Error loading shaders!" << std::endl;
 		return false;
@@ -484,18 +586,22 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		std::cerr << "Error creating index buffer!" << std::endl;
 		return false;
 	}
-
+	/*
 	if (!Create2DTexture(device, texture))
 	{
 		std::cerr << "Error creating 2D Texture" << std::endl;
 		return false;
 	}
-
+	*/
+	
+	/*
 	if (!CreateSRV(device, texture, srv))
 	{
 		std::cerr << "Error creating Shader Resorse View!" << std::endl;
 		return false;
 	}
+	*/
+	
 
 	if (!CreateSampler(device, sampleState))
 	{
@@ -519,17 +625,24 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	{
 		std::cerr << "Error creating Constant Buffer for Camera position!" << std::endl;
 		return false;
+	}	
+	
+	if (!CreateTextureCube(device, width, height, cubeMapTexture, cubeMapRTVArray, cubeMapSrv))
+	{
+		std::cerr << "Error creating TextureCube!" << std::endl;
+		return false;
 	}
-	// Binding to the Vertex Shader and the Pixel Shader
+
+	// Binding the necessary Buffers and Resources to the diffrent shaders
 
 	deviceContext->VSSetConstantBuffers(0, 1, &constantBufferVertex);
-	deviceContext->PSSetShaderResources(0, 1, &srv);
+	//deviceContext->PSSetShaderResources(0, 1, &srv);
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
 
-	ID3D11Buffer* bufferArray[2] = { constantLightBuffer, constantMaterialBuffer };
-	deviceContext->PSSetConstantBuffers(1, 2, bufferArray);
+	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
+	deviceContext->CSSetConstantBuffers(0, 3, bufferArray);
 
-	deviceContext->PSSetConstantBuffers(3, 1, &constantCameraBuffer);
+	//deviceContext->PSSetConstantBuffers(3, 1, &constantCameraBuffer);
 
 	return true;
 }
