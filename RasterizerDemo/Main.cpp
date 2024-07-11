@@ -66,17 +66,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* constantLightBuffer;
 	ID3D11Buffer* constantMaterialBuffer;
 	ID3D11Buffer* constantCameraBuffer;
-	ID3D11Texture2D* texture;
-	ID3D11ShaderResourceView* srv;
+
 	ID3D11SamplerState* samplerState;
 	ID3D11UnorderedAccessView* uav;
+
+	// creation of the needed things for the cubemap
+	ID3D11Texture2D* cubeMapTexture;
+	ID3D11RenderTargetView** cubeMapRtvArray = new ID3D11RenderTargetView*[6];
+	ID3D11ShaderResourceView* cubeMapSrv;
 
 	// Loads Models into the scene
 	std::vector<std::string> modelNames;
 
 	
-	modelNames.push_back("room.obj");
 	modelNames.push_back("monkey.obj");
+	modelNames.push_back("room.obj");
 	//modelNames.push_back("untitled.obj");
 	//modelNames.push_back("untitled1.obj");
 
@@ -107,7 +111,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, cShader,inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, texture, srv, samplerState, modelNames))
+	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, cShader,inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapRtvArray ,cubeMapSrv, samplerState, modelNames, WIDTH, HEIGHT))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -171,7 +175,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		
 	}
 	
-
+	
 
 
 	MSG msg = { };
@@ -266,7 +270,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		xDist += (deltaTime) * 0.5f;
 	}
 
-	//texture->Release();
+
 
 	for (int i = 0; i < nrOfGBuffers; ++i)
 	{
@@ -294,6 +298,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	delete[] modelTextures;
 	delete[] srvModelTextures;
 
+	for (int i = 0; i < 6; ++i)
+	{
+		//cubeMapRtvArray[i]->Release();
+	}
+	
+	delete[] cubeMapRtvArray;
+	//cubeMapTexture->Release();
 	constantBufferVertex->Release();
 	constantLightBuffer->Release();
 	constantMaterialBuffer->Release();
