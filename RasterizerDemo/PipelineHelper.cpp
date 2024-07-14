@@ -4,6 +4,7 @@
 #include "VertexBufferD3D11.h"
 #include "IndexBufferD3D11.h"
 #include "CameraD3D11.h"
+#include "D3D11Helper.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -475,13 +476,16 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 
 }
 
-bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV)
+bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Texture2D*& cubeMapTexture, 
+	ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV, 
+	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& dsTexture,
+	ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState)
 {
 	//bool hasSRV = false;
 	D3D11_TEXTURE2D_DESC desc; 
 	ZeroMemory(&desc, sizeof(desc));
-	desc.Width = 512;
-	desc.Height = 512;
+	desc.Width = width;
+	desc.Height = height;
 	desc.MipLevels = 1;
 	desc.ArraySize = 6;
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -521,20 +525,41 @@ bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Text
 	{
 		return FAILED(hr);
 	}
-	return true;
-}
 
-bool CreateVirtualCameras()
-{
 	ProjectionInfo projectionInfo;
 	projectionInfo.fovAngleY = XM_PIDIV2;
 	projectionInfo.aspectRatio = 1.0f;
 	projectionInfo.nearZ = 0.1f;
 	projectionInfo.farZ = 100.0f;
 	float upRotations[6] = { XM_PIDIV2, -XM_PIDIV2, 0.0f, 0.0f, 0.0f, XM_PI };
-	float rightRotation[6] = { 0.0f, 0.0f, -XM_PIDIV2 , XM_PIDIV2 , 0.0f, 0.0f };
+	float rightRotations[6] = { 0.0f, 0.0f, -XM_PIDIV2 , XM_PIDIV2 , 0.0f, 0.0f };
 
-	return false;
+	XMFLOAT3 initialPosition = { 0.0f,0.0f,0.0f };
+
+	for (int i = 0; i < 6; ++i)
+	{
+		cameraArray[i]->Initialize(device, projectionInfo, initialPosition);
+		cameraArray[i]->RotateUp(upRotations[i]);
+		cameraArray[i]->RotateRight(rightRotations[i]);
+	}
+	// setting up the viewport for the cubeMap
+	SetViewport(cubeMapViewport, width, height);
+
+	// Creation of the depth stencil and depth stencil state for the cube map
+
+	if (!CreateDepthStencil(device, width, height, dsTexture, dsView))
+	{
+		std::cerr << "Error creating depth stencil view!" << std::endl;
+		return false;
+	}
+
+	if (!CreateDepthStencilState(device, dsState))
+	{
+		std::cerr << "Error creating depth stencil state!" << std::endl;
+		return false;
+	}
+
+	return true;
 }
 
 enum TEXTURE_CUBE_FACE_INDEX
@@ -552,7 +577,8 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray,ID3D11ShaderResourceView*& cubeMapSrv, 
-	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames,	UINT width, UINT height)
+	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
+	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, cShader,vShaderByteCode))
@@ -627,7 +653,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		return false;
 	}	
 	
-	if (!CreateTextureCube(device, width, height, cubeMapTexture, cubeMapRTVArray, cubeMapSrv))
+	if (!CreateTextureCube(device, width, height, cubeMapTexture, cubeMapRTVArray, cubeMapSrv, cameraArray, cubeMapViewport, cubeMapDSTexture, cubeMapDSView, cubeMapDSState))
 	{
 		std::cerr << "Error creating TextureCube!" << std::endl;
 		return false;

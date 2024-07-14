@@ -10,6 +10,7 @@
 #include "PipelineHelper.h"
 #include "IndexBufferD3D11.h"
 #include "VertexBufferD3D11.h"
+#include "CameraD3D11.h"
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
@@ -75,6 +76,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11RenderTargetView** cubeMapRtvArray = new ID3D11RenderTargetView*[6];
 	ID3D11ShaderResourceView* cubeMapSrv;
 
+	CameraD3D11** cubeMapCameras = new CameraD3D11*[6];
+
+	for (int i = 0; i < 6; ++i)
+	{
+		cubeMapCameras[i] = new CameraD3D11;
+	}
+
+	D3D11_VIEWPORT cubeMapViewport;
+	ID3D11Texture2D* cubeMapDSTexture;
+	ID3D11DepthStencilView* cubeMapDSView;
+	ID3D11DepthStencilState* cubeMapDSState;
+
 	// Loads Models into the scene
 	std::vector<std::string> modelNames;
 
@@ -111,7 +124,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, cShader,inputLayout, constantBufferVertex, constantLightBuffer, constantMaterialBuffer, constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapRtvArray ,cubeMapSrv, samplerState, modelNames, WIDTH, HEIGHT))
+	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, cShader,inputLayout, 
+		constantBufferVertex, constantLightBuffer, constantMaterialBuffer, 
+		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapRtvArray,
+		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
+		samplerState, modelNames, WIDTH, HEIGHT))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -309,12 +326,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	constantLightBuffer->Release();
 	constantMaterialBuffer->Release();
 	constantCameraBuffer->Release();
+	//cubeMapDSView->Release();
+	//cubeMapDSTexture->Release();
 	inputLayout->Release();
 	pShader->Release();
 	vShader->Release();
 	cShader->Release();
 	dsView->Release();
 	dsTexture->Release();
+	dsState->Release();
 	rtv->Release();
 	swapChain->Release();
 	immediateContext->Release();

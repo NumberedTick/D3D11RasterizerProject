@@ -80,5 +80,9 @@ ID3D11Buffer* ConstantBufferD3D11::GetBuffer() const
 
 void ConstantBufferD3D11::UpdateBuffer(ID3D11DeviceContext* context, void* data)
 {
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
 
+	context->Map(this->buffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
+	memcpy(mappedResource.pData, &data, sizeof(data));
+	context->Unmap(this->buffer, 0);
 }
