@@ -107,16 +107,16 @@ bool CreateInputLayout(ID3D11Device* device, ID3D11InputLayout*& inputLayout, co
 // Used mostly for the rotation
 XMMATRIX CreateWorldMatrix(float angle, float xDist)
 {
-	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, -1.0+xDist);
+	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 1.0f);
 	XMMATRIX rotationMatrix = XMMatrixRotationY(angle);
 	XMMATRIX worldMatrix = XMMatrixMultiply(translationMatrix, rotationMatrix);
 	return worldMatrix;
 }
 
 // Function for creating a view+perspective matrix in world space
-XMMATRIX CreatViewPerspectiveMatrix(XMVECTOR focusPoint, XMVECTOR upDirection, XMVECTOR eyePosition, float fovAngleY, float aspectRatio, float nearZ, float farZ)
+XMMATRIX CreatViewPerspectiveMatrix(XMVECTOR viewVector, XMVECTOR upDirection, XMVECTOR eyePosition, float fovAngleY, float aspectRatio, float nearZ, float farZ)
 {
-	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection); 
+	XMMATRIX viewMatrix = XMMatrixLookToLH(eyePosition, viewVector, upDirection); 
 	XMMATRIX perspectiveFovMatrix = XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
 	XMMATRIX viewAndPerspectiveMatrix = XMMatrixMultiply(viewMatrix, perspectiveFovMatrix);
 
@@ -191,15 +191,15 @@ bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
-	XMVECTOR focusPoint = { 0.0f, 0.0f, 1.0f };
+	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.5f };
+	XMVECTOR viewVecotr = { 0.0f, 0.0f, -1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
-	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.0f };
 	float fovAgnleY = XM_PI / 2.5f;
 	float aspectRatio = 1024.0f / 576.0f;
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
 	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f, 0.0f);
-	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(focusPoint, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
+	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(viewVecotr, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
 
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array[2];
@@ -534,7 +534,7 @@ bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Text
 	float upRotations[6] = { XM_PIDIV2, -XM_PIDIV2, 0.0f, 0.0f, 0.0f, XM_PI };
 	float rightRotations[6] = { 0.0f, 0.0f, -XM_PIDIV2 , XM_PIDIV2 , 0.0f, 0.0f };
 
-	XMFLOAT3 initialPosition = { 0.0f,0.0f,0.0f };
+	XMFLOAT3 initialPosition = { 0.0f,0.0f,0.5f };
 
 	for (int i = 0; i < 6; ++i)
 	{

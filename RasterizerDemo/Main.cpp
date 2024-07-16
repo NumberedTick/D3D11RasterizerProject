@@ -92,8 +92,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	std::vector<std::string> modelNames;
 
 	
-	modelNames.push_back("monkey.obj");
+
 	modelNames.push_back("room.obj");
+	modelNames.push_back("monkey.obj");
 	//modelNames.push_back("untitled.obj");
 	//modelNames.push_back("untitled1.obj");
 
@@ -102,8 +103,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Loads textures
 	
 	std::vector<std::string> textureNames;
-	textureNames.push_back("texture.jpg");
 	textureNames.push_back("texture2.png");
+	textureNames.push_back("texture.jpg");
+
 
 	std::string missingTexture = "missing.jpg";
 	// Creates VertexBuffers for each model loaded (currently doing it manually)
@@ -277,14 +279,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			rotationAmount = 0;
 		}		
 		
+		/*
 		if (xDist >= 1.0f)
 		{
 			xDist = 0.0f;
 		}
+		*/
 
-		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time
+		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time'
+
+
 		rotationAmount += (deltaTime)*XM_2PI;
-		xDist += (deltaTime) * 0.5f;
+		//xDist += (deltaTime) * 0.5f;
 	}
 
 
