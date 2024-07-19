@@ -123,7 +123,7 @@ struct Material
 
 XMMATRIX CreateWorldMatrix(float angle, float xDist);
 
-XMMATRIX CreatViewPerspectiveMatrix(float xPos, float yPos, float zPos);
+XMMATRIX CreatViewPerspectiveMatrix(XMVECTOR viewVector, XMVECTOR upDirection, XMVECTOR eyePosition, float fovAngleY, float aspectRatio, float nearZ, float farZ);
 
 bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture, std::string textureName);
 

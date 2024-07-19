@@ -1,5 +1,6 @@
 #include "CameraD3D11.h"
 #include "ConstantBufferD3D11.h"
+#include "PipelineHelper.h"
 #include <DirectXMath.h>
 
 CameraD3D11::CameraD3D11(ID3D11Device* device, const ProjectionInfo& projectionInfo, const DirectX::XMFLOAT3& initialPosition)
@@ -103,9 +104,23 @@ ID3D11Buffer* CameraD3D11::GetConstantBuffer() const
 {
 	return this->cameraBuffer.GetBuffer();
 }
-/*
+
 DirectX::XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
 {
-	return 
+	XMVECTOR viewVector = DirectX::XMLoadFloat3(&this->GetForward());
+	XMVECTOR upDirection = DirectX::XMLoadFloat3(&this->GetUp());
+	XMVECTOR eyePosition = DirectX::XMLoadFloat3(&this->GetPosition());
+	float fovAngleY = this->projInfo.fovAngleY;
+	float aspectRatio = this->projInfo.aspectRatio;
+	float nearZ = this->projInfo.nearZ;
+	float farZ = this->projInfo.farZ;
+
+	DirectX::XMMATRIX cameraViewProjectionMatrix = CreatViewPerspectiveMatrix(viewVector, upDirection, eyePosition, fovAngleY, aspectRatio, nearZ, farZ);
+
+	DirectX::XMFLOAT4X4 returnFloat4X4;
+
+	DirectX::XMStoreFloat4x4(&returnFloat4X4, cameraViewProjectionMatrix);
+
+
+	return returnFloat4X4;
 }
-*/

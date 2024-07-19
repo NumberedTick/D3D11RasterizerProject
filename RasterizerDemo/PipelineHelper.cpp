@@ -107,7 +107,7 @@ bool CreateInputLayout(ID3D11Device* device, ID3D11InputLayout*& inputLayout, co
 // Used mostly for the rotation
 XMMATRIX CreateWorldMatrix(float angle, float xDist)
 {
-	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 1.0f);
+	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, -0.5f);
 	XMMATRIX rotationMatrix = XMMatrixRotationY(angle);
 	XMMATRIX worldMatrix = XMMatrixMultiply(translationMatrix, rotationMatrix);
 	return worldMatrix;
@@ -191,8 +191,8 @@ bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
-	XMVECTOR eyePosition = { 0.0f, 0.0f, -4.5f };
-	XMVECTOR viewVecotr = { 0.0f, 0.0f, -1.0f };
+	XMVECTOR eyePosition = { 0.0f, 0.0f, -3.5f };
+	XMVECTOR viewVecotr = { 0.0f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
 	float fovAgnleY = XM_PI / 2.5f;
 	float aspectRatio = 1024.0f / 576.0f;
@@ -481,11 +481,14 @@ bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Text
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& dsTexture,
 	ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState)
 {
+	UINT cubeWidth = 1024;
+	UINT cubeHeight = 1024;
+
 	//bool hasSRV = false;
 	D3D11_TEXTURE2D_DESC desc; 
 	ZeroMemory(&desc, sizeof(desc));
-	desc.Width = width;
-	desc.Height = height;
+	desc.Width = cubeWidth;
+	desc.Height = cubeHeight;
 	desc.MipLevels = 1;
 	desc.ArraySize = 6;
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -499,7 +502,7 @@ bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Text
 	HRESULT hr = device->CreateTexture2D(&desc, nullptr, &cubeMapTexture);
 	if (FAILED(hr))
 	{
-		return FAILED(hr);
+		return !FAILED(hr);
 	}
 
 	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
@@ -534,7 +537,7 @@ bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Text
 	float upRotations[6] = { XM_PIDIV2, -XM_PIDIV2, 0.0f, 0.0f, 0.0f, XM_PI };
 	float rightRotations[6] = { 0.0f, 0.0f, -XM_PIDIV2 , XM_PIDIV2 , 0.0f, 0.0f };
 
-	XMFLOAT3 initialPosition = { 0.0f,0.0f,0.5f };
+	XMFLOAT3 initialPosition = { 0.0f, 0.0f, -0.5f };
 
 	for (int i = 0; i < 6; ++i)
 	{
@@ -543,11 +546,11 @@ bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Text
 		cameraArray[i]->RotateRight(rightRotations[i]);
 	}
 	// setting up the viewport for the cubeMap
-	SetViewport(cubeMapViewport, width, height);
+	SetViewport(cubeMapViewport, cubeWidth, cubeHeight);
 
 	// Creation of the depth stencil and depth stencil state for the cube map
 
-	if (!CreateDepthStencil(device, width, height, dsTexture, dsView))
+	if (!CreateDepthStencil(device, cubeWidth, cubeHeight, dsTexture, dsView))
 	{
 		std::cerr << "Error creating depth stencil view!" << std::endl;
 		return false;

@@ -36,6 +36,51 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
 }
 
+
+void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView**& rtvArr,
+	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
+	ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
+	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras, ID3D11Buffer* constantBufferVertex, D3D11_MAPPED_SUBRESOURCE mappedResource)
+{
+	ID3D11ShaderResourceView* nullSRV = nullptr;
+	immediateContext->PSSetShaderResources(0, 1, &nullSRV);
+
+
+
+	float clearColour[4] = { 0, 0, 0, 0 };
+	for (int i = 0; i < 6; ++i) // Render relevant objects for each of the six sides in the texture cube. 
+	{
+
+		XMFLOAT4X4 tempFloat4X4 = cubeMapCameras[i]->GetViewProjectionMatrix();
+		
+		//memcpy(mappedResource.pData, &tempFloat4X4, sizeof(XMFLOAT4X4));
+
+
+		UINT stride = sizeof(SimpleVertex);
+		UINT offset = 0;
+		ID3D11Buffer* buffers[] = { vertexBuffer[0].GetBuffer() };
+		ID3D11Buffer* indexBuffers[] = { indexBuffer[0].GetBuffer() };
+		immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
+		immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
+		immediateContext->IASetInputLayout(inputLayout);
+		immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		immediateContext->OMSetDepthStencilState(dsState, 0);
+		immediateContext->VSSetShader(vShader, nullptr, 0);
+		immediateContext->RSSetViewports(1, &viewport);
+		immediateContext->PSSetShader(pShader, nullptr, 0);
+		immediateContext->OMSetRenderTargets(1, &rtvArr[i], dsView);
+
+		immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
+
+		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+		immediateContext->ClearRenderTargetView(rtvArr[i], clearColour);
+	}
+
+	ID3D11RenderTargetView* nullRTV = nullptr;
+	immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr); 
+}
+
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR    lpCmdLine,
@@ -94,8 +139,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	
 
 	modelNames.push_back("room.obj");
-	modelNames.push_back("monkey.obj");
-	//modelNames.push_back("untitled.obj");
+	//modelNames.push_back("monkey.obj");
+	modelNames.push_back("untitled.obj");
 	//modelNames.push_back("untitled1.obj");
 
 	UINT nrModels = static_cast<UINT>(modelNames.size());
@@ -209,6 +254,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	float clearColour[4] = { 0, 0, 0, 0 };
 
+	XMMATRIX cubemapMatrix;
+
+	// TEMP VALAUES USED UNTIL I SWITCH MAIN CAMERA TO A CAMERA OBJECT
+
+	XMMATRIX baselineWorldMatrix = CreateWorldMatrix(0.0f, -0.5f);
+
+
+	XMVECTOR eyePosition = { 0.0f, 0.0f, -3.5f };
+	XMVECTOR viewVecotr = { 0.0f, 0.0f, 1.0f };
+	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
+	float fovAgnleY = XM_PI / 2.5f;
+	float aspectRatio = 1024.0f / 576.0f;
+	float nearZ = 0.1f;
+	float farZ = 1000.0f;
+
+	XMMATRIX baselineViewProjMatrix = CreatViewPerspectiveMatrix(eyePosition, viewVecotr, upDirection, fovAgnleY, aspectRatio, nearZ, farZ);
+	XMFLOAT4X4 baselineViewProjMatrixFloat4X4;
+	XMStoreFloat4x4(&baselineViewProjMatrixFloat4X4, baselineViewProjMatrix);
+
 
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
@@ -222,23 +286,50 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		auto startTime = std::chrono::high_resolution_clock::now();
 
 		// creation of the new world matrix for the rotation
-		XMMATRIX newWorldMatrix = CreateWorldMatrix(rotationAmount, xDist);
-		XMStoreFloat4x4(&float4x4Array, newWorldMatrix);
+
 
 		// Mapping the new world matrix to the vertex shader
+		/*
 		immediateContext->Map(constantBufferVertex, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
 		memcpy(mappedResource.pData, &float4x4Array, sizeof(XMFLOAT4X4));
 		immediateContext->Unmap(constantBufferVertex, 0);
-		
+		*/
 		// Rendering
 
 		// Cleararing from last frame
 		for (int i = 0; i < nrOfGBuffers; ++i)
 		{
 			immediateContext->ClearRenderTargetView(rtvArr[i], clearColour);
+		}		
+		
+		for (int i = 0; i < 6; ++i)
+		{
+			immediateContext->ClearRenderTargetView(cubeMapRtvArray[i], clearColour);
 		}
+
+
 		immediateContext->ClearRenderTargetView(rtv, clearColour);
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+
+
+		immediateContext->Map(constantBufferVertex, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
+		RenderReflectivObject(immediateContext, cubeMapRtvArray, cubeMapDSView, cubeMapDSState, cubeMapViewport, vShader, pShader, cShader, inputLayout, vBuffer[0], iBuffer[0], cubeMapCameras, constantBufferVertex, mappedResource);
+		immediateContext->Unmap(constantBufferVertex, 0);
+		/*
+
+		
+		memcpy(mappedResource.pData, &baselineViewProjMatrixFloat4X4, sizeof(XMFLOAT4X4));
+		immediateContext->Unmap(constantBufferVertex, 1);
+
+		*/
+		
+		XMMATRIX newWorldMatrix = CreateWorldMatrix(rotationAmount, xDist);
+		XMStoreFloat4x4(&float4x4Array, newWorldMatrix);
+
+
+		immediateContext->Map(constantBufferVertex, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
+		memcpy(mappedResource.pData, &float4x4Array, sizeof(XMFLOAT4X4));
+		immediateContext->Unmap(constantBufferVertex, 0);
 		
 		// Gemoetry pass
 		for (int i = 0; i < nrModels; ++i)
