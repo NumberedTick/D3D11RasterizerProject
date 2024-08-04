@@ -1,8 +1,8 @@
 RWTexture2D<unorm float4> backBufferUAV : register(u0);
 
-Texture2D<float4> positionGBuffer : register(t0);
+Texture2D<float4> positionGBuffer : register(t2);
 Texture2D<float4> colorGBuffer : register(t1);
-Texture2D<float4> normalGBuffer: register(t2);
+Texture2D<float4> normalGBuffer: register(t0);
 
 cbuffer LightBuffer : register(b0)
 {

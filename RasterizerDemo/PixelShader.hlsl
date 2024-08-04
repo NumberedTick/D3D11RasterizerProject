@@ -10,9 +10,9 @@ struct PixelShaderInput
 
 struct PixelShaderOutput
 {
-    float4 position : SV_Target0;
+    float4 position : SV_Target2;
     float4 colour : SV_Target1;
-    float4 normal : SV_Target2;
+    float4 normal : SV_Target0;
 };
 
 

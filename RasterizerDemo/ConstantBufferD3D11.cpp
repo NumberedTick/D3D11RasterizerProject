@@ -50,6 +50,7 @@ void ConstantBufferD3D11::Initialize(ID3D11Device* device, size_t byteSize, void
 		this->buffer = nullptr;
 	}
 
+
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.ByteWidth = byteSize;
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -80,9 +81,15 @@ ID3D11Buffer* ConstantBufferD3D11::GetBuffer() const
 
 void ConstantBufferD3D11::UpdateBuffer(ID3D11DeviceContext* context, void* data)
 {
+
+	context->UpdateSubresource(this->buffer, 0, nullptr, data, 0, 0);
+
+	/*
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 
 	context->Map(this->buffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
 	memcpy(mappedResource.pData, &data, sizeof(data));
 	context->Unmap(this->buffer, 0);
+	*/
+	
 }

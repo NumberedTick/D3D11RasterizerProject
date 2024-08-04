@@ -14,8 +14,12 @@ struct VertexOutput
 
 cbuffer ConstantBuffer : register(b0)
 {
-    float4x4 world;            
-    float4x4 viewProjection;   
+    row_major float4x4 world;             
+};
+
+cbuffer ConstantBuffer2 : register(b1)
+{
+    row_major float4x4 viewProjection;
 };
 
 VertexOutput main(VertexInput input)

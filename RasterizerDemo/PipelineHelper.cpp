@@ -105,11 +105,13 @@ bool CreateInputLayout(ID3D11Device* device, ID3D11InputLayout*& inputLayout, co
 
 // Function to create a world matrix with a new angle
 // Used mostly for the rotation
-XMMATRIX CreateWorldMatrix(float angle, float xDist)
+XMMATRIX CreateWorldMatrix(float angle, float xDist, float yDist, float zDist)
 {
-	XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, -0.5f);
+	XMMATRIX translationMatrix = XMMatrixTranslation(xDist, yDist, zDist);
 	XMMATRIX rotationMatrix = XMMatrixRotationY(angle);
-	XMMATRIX worldMatrix = XMMatrixMultiply(translationMatrix, rotationMatrix);
+	XMMATRIX worldMatrix = XMMatrixMultiply(rotationMatrix, translationMatrix);
+
+
 	return worldMatrix;
 }
 
@@ -186,9 +188,33 @@ bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 
 
 }
+bool CreateWorldMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantWorldMatrixBuffer)
+{
+	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f, 0.0f, 0.0f, -0.5f);
+	XMFLOAT4X4 worldMatrixFloat4X4;
 
+	XMStoreFloat4x4(&worldMatrixFloat4X4, worldMatrix);
 
-bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBufferVertex)
+	// Buffer Desc for constant buffer
+	D3D11_BUFFER_DESC constantBufferDesc;
+	constantBufferDesc.ByteWidth = sizeof(XMFLOAT4X4);
+	constantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	constantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	constantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	constantBufferDesc.MiscFlags = 0;
+	constantBufferDesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA constantData;
+	constantData.pSysMem = &worldMatrixFloat4X4;
+	constantData.SysMemPitch = 0;
+	constantData.SysMemSlicePitch = 0;
+
+	HRESULT hr = device->CreateBuffer(&constantBufferDesc, &constantData, &constantWorldMatrixBuffer);
+
+	return !FAILED(hr);
+}
+
+bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantViewProjMatrixBuffer)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
 	XMVECTOR eyePosition = { 0.0f, 0.0f, -3.5f };
@@ -198,16 +224,15 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 	float aspectRatio = 1024.0f / 576.0f;
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
-	XMMATRIX worldMatrix = CreateWorldMatrix(0.0f, 0.0f);
 	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(viewVecotr, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
 
 	// Adding the two matrixes into one array
-	XMFLOAT4X4 float4x4Array[2];
-	MatrixBuffer matrixBuffer(worldMatrix, viewAndPerspectiveMatrix, float4x4Array);
+	XMFLOAT4X4 float4x4Array;
+	XMStoreFloat4x4(&float4x4Array, viewAndPerspectiveMatrix);
 
 	// Buffer Desc for constant buffer
 	D3D11_BUFFER_DESC constantBufferDesc; 
-	constantBufferDesc.ByteWidth = sizeof(XMFLOAT4X4)*2;
+	constantBufferDesc.ByteWidth = sizeof(XMFLOAT4X4);
 	constantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	constantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	constantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -215,11 +240,11 @@ bool CreateConstantBufferVertex(ID3D11Device* device, ID3D11Buffer*& constantBuf
 	constantBufferDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA constantData;
-	constantData.pSysMem = &matrixBuffer;
+	constantData.pSysMem = &float4x4Array;
 	constantData.SysMemPitch = 0;
 	constantData.SysMemSlicePitch = 0;
 
-	HRESULT hr = device->CreateBuffer(&constantBufferDesc, &constantData, &constantBufferVertex);
+	HRESULT hr = device->CreateBuffer(&constantBufferDesc, &constantData, &constantViewProjMatrixBuffer);
 
 	return !FAILED(hr);
 }
@@ -476,58 +501,13 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 
 }
 
-bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Texture2D*& cubeMapTexture, 
-	ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV, 
-	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& dsTexture,
+// Function to create the Resources that only need to be created once for each texture cube
+bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& dsTexture,
 	ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState)
 {
+
 	UINT cubeWidth = 1024;
 	UINT cubeHeight = 1024;
-
-	//bool hasSRV = false;
-	D3D11_TEXTURE2D_DESC desc; 
-	ZeroMemory(&desc, sizeof(desc));
-	desc.Width = cubeWidth;
-	desc.Height = cubeHeight;
-	desc.MipLevels = 1;
-	desc.ArraySize = 6;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags = 0;
-	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
-
-	HRESULT hr = device->CreateTexture2D(&desc, nullptr, &cubeMapTexture);
-	if (FAILED(hr))
-	{
-		return !FAILED(hr);
-	}
-
-	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-	rtvDesc.Texture2DArray.ArraySize = 1; 
-	rtvDesc.Texture2DArray.MipSlice = 0;
-
-	for (int i = 0; i < 6; ++i)
-	{
-		rtvDesc.Texture2DArray.FirstArraySlice = i;
-		hr = device->CreateRenderTargetView(cubeMapTexture, &rtvDesc, &cubeMapRTVArray[i]);
-
-		if (FAILED(hr))
-		{
-			return FAILED(hr);
-		}
-	}
-
-	hr = device->CreateShaderResourceView(cubeMapTexture, nullptr, &cubeMapSRV);
-
-	if (FAILED(hr))
-	{
-		return FAILED(hr);
-	}
 
 	ProjectionInfo projectionInfo;
 	projectionInfo.fovAngleY = XM_PIDIV2;
@@ -563,6 +543,61 @@ bool CreateTextureCube(ID3D11Device* device, UINT width, UINT height, ID3D11Text
 	}
 
 	return true;
+
+}
+
+// Function To create the resouces that are needed for each texture cube
+bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV, UINT currentIndex)
+{
+	UINT cubeWidth = 1024;
+	UINT cubeHeight = 1024;
+
+	//bool hasSRV = false;
+	D3D11_TEXTURE2D_DESC desc; 
+	ZeroMemory(&desc, sizeof(desc));
+	desc.Width = cubeWidth;
+	desc.Height = cubeHeight;
+	desc.MipLevels = 1;
+	desc.ArraySize = 6;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags = 0;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+	HRESULT hr = device->CreateTexture2D(&desc, nullptr, &cubeMapTexture);
+	if (FAILED(hr))
+	{
+		return !FAILED(hr);
+	}
+
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+	rtvDesc.Texture2DArray.ArraySize = 1; 
+	rtvDesc.Texture2DArray.MipSlice = 0;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		rtvDesc.Texture2DArray.FirstArraySlice = i;
+		hr = device->CreateRenderTargetView(cubeMapTexture, &rtvDesc, &cubeMapRTVArray[i+currentIndex*6]);
+
+		if (FAILED(hr))
+		{
+			return FAILED(hr);
+		}
+	}
+
+	hr = device->CreateShaderResourceView(cubeMapTexture, nullptr, &cubeMapSRV);
+
+	if (FAILED(hr))
+	{
+		return FAILED(hr);
+	}
+
+	return true;
 }
 
 enum TEXTURE_CUBE_FACE_INDEX
@@ -577,7 +612,7 @@ enum TEXTURE_CUBE_FACE_INDEX
 
 
 bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
-	ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantBufferVertex, 
+	ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
@@ -596,10 +631,16 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		return false;
 	}
 
-
-	if (!CreateConstantBufferVertex(device, constantBufferVertex))
+	if (!CreateWorldMatrixBuffer(device, constantWorldMatrixBuffer))
 	{
-		std::cerr << "Error creating constant buffer for Vertex shader!" << std::endl;
+		std::cerr << "Error creating constant buffer for world matrix in Vertex shader!" << std::endl;
+		return false;
+
+	}
+
+	if (!CreateViewProjMatrixBuffer(device, constantViewProjMatrixBuffer))
+	{
+		std::cerr << "Error creating constant buffer for View and Projection Matrix in Vertex shader!" << std::endl;
 		return false;
 	}
 
@@ -656,15 +697,24 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		return false;
 	}	
 	
-	if (!CreateTextureCube(device, width, height, cubeMapTexture, cubeMapRTVArray, cubeMapSrv, cameraArray, cubeMapViewport, cubeMapDSTexture, cubeMapDSView, cubeMapDSState))
+	if (!CreateTextrueCubeReusableResources(device, cameraArray, cubeMapViewport, cubeMapDSTexture, cubeMapDSView, cubeMapDSState))
+	{
+		std::cerr << "Error creating Reusable TextureCube Resources!" << std::endl;
+		return false;
+	}
+
+	/*
+	if (!CreateTextureCube(device, cubeMapTexture, cubeMapRTVArray, cubeMapSrv))
 	{
 		std::cerr << "Error creating TextureCube!" << std::endl;
 		return false;
 	}
+	*/
+	
 
 	// Binding the necessary Buffers and Resources to the diffrent shaders
 
-	deviceContext->VSSetConstantBuffers(0, 1, &constantBufferVertex);
+	
 	//deviceContext->PSSetShaderResources(0, 1, &srv);
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
 
