@@ -125,14 +125,22 @@ XMMATRIX CreatViewPerspectiveMatrix(XMVECTOR viewVector, XMVECTOR upDirection, X
 	return viewAndPerspectiveMatrix;
 }
 
-bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexes) 
+bool LoadObj(std::string& modleName, objl::Loader& objLoader)
 {
-	objl::Loader objLoader;
 	bool objFileCheck = objLoader.LoadFile(modleName);
 
 	if (!objFileCheck)
 	{
 		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
+		return false;
+	}
+}
+
+bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexes) 
+{
+	objl::Loader objLoader;
+	if (!LoadObj(modleName, objLoader))
+	{
 		return false;
 	}
 
@@ -160,11 +168,8 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 {
 	objl::Loader objLoader;
-	bool objFileCheck = objLoader.LoadFile(modleName);
-
-	if (!objFileCheck)
+	if (!LoadObj(modleName, objLoader))
 	{
-		std::cerr << "Error loading OBJ file! File name not found!" << std::endl;
 		return false;
 	}
 
@@ -249,8 +254,32 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 	return !FAILED(hr);
 }
 
+bool CreateMaps(Material material, std::string& modleName)
+{
+	objl::Loader objLoader;
+	if (!LoadObj(modleName, objLoader))
+	{
+		return false;
+	}
+
+	// Color values
+	std::array<float, 4> ambientColor = { objLoader.LoadedMaterials[0].Ka.X, objLoader.LoadedMaterials[0].Ka.Y, objLoader.LoadedMaterials[0].Ka.Z, 1.0f };
+	std::array<float, 4> diffuseColor = { objLoader.LoadedMaterials[0].Kd.X,objLoader.LoadedMaterials[0].Kd.Y,objLoader.LoadedMaterials[0].Kd.Z,1.0f };
+	std::array<float, 4> specularColor = { objLoader.LoadedMaterials[0].Ks.X,objLoader.LoadedMaterials[0].Ks.Y,objLoader.LoadedMaterials[0].Ks.Z,1.0f };
+
+	// Material Coeficients
+	float ambientIntensity = 0.2f;
+	float padding = 0.0f;
+	float specularPower = objLoader.LoadedMaterials[0].Ns;
+
+	// Creation of the material
+	material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
+
+	return true;
+}
+
 // Creation of the Vertex Buffer
-bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuffer, std::vector<std::string>& modelNames)
+bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuffer, std::vector<std::string>& modelNames, Material**& materialArray)
 {
 	
 	for (int i = 0; i < modelNames.size(); i++) 
@@ -264,6 +293,10 @@ bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuf
 			return false;
 		}
 
+		if (!CreateMaps(*materialArray[i], modelNames[i]))
+		{
+			return false;
+		}
 
 		testVertexBuffer[i]->Initialize(device, sizeof(SimpleVertex), Vertices.size(), Vertices.data());
 		// Buffer des for vertex Buffer
@@ -616,7 +649,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
-	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height)
+	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, cShader,vShaderByteCode))
@@ -645,7 +678,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	}
 
 
-	if (!CreateVertexBuffer(device, vertexBuffer, modelNames))
+	if (!CreateVertexBuffer(device, vertexBuffer, modelNames, materialArray))
 	{
 		std::cerr << "Error creating vertex buffer!" << std::endl;
 		return false;
@@ -656,6 +689,8 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		std::cerr << "Error creating index buffer!" << std::endl;
 		return false;
 	}
+	
+
 	/*
 	if (!Create2DTexture(device, texture))
 	{

@@ -17,8 +17,9 @@ cbuffer MaterialBuffer : register(b1)
     float4 diffuseRGBA;
     float4 specularRGBA;
     float ambientIntensity;
-    float padding;
     float specularPower;
+    float padding;
+
 };
 
 cbuffer cameraPosition : register(b2)
