@@ -13,6 +13,21 @@ struct PixelShaderOutput
     float4 position : SV_Target2;
     float4 colour : SV_Target1;
     float4 normal : SV_Target0;
+    float4 ambient : SV_Target3;
+    float4 diffuse : SV_Target4;
+    float4 specular : SV_Target5;
+};
+
+
+cbuffer MaterialBuffer : register(b0)
+{
+    float4 ambientRGBA;
+    float4 diffuseRGBA;
+    float4 specularRGBA;
+    float ambientIntensity;
+    float specularPower;
+    float padding;
+
 };
 
 
@@ -23,9 +38,12 @@ PixelShaderOutput main(PixelShaderInput input)
     output.colour = textureMap.Sample(samplerState, input.uvcoords);
     output.normal = float4(input.normal, 0);
     output.position = input.position;
+    output.ambient = float4(ambientRGBA.xyz, ambientIntensity);
+    output.diffuse = diffuseRGBA;
+    output.specular = float4(specularRGBA.xyz, specularPower);
 	
-    return output;
-};
+        return output;
+    };
 
 //Temp disable output
 /*

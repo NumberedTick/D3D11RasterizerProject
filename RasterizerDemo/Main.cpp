@@ -15,12 +15,13 @@
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 			ID3D11PixelShader* pShader, ID3D11ComputeShader* cShader,ID3D11InputLayout* inputLayout, VertexBufferD3D11* vertexBuffer, 
-			IndexBufferD3D11* indexBuffer, ID3D11Buffer* tempConstantBuffer, ID3D11Buffer* viewProjBuffers)
+			IndexBufferD3D11* indexBuffer, ID3D11Buffer* tempConstantBuffer, ID3D11Buffer* viewProjBuffers, ID3D11Buffer* bufferArray[3], ConstantBufferD3D11*& materialBufferArray)
 {
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
 	ID3D11Buffer* buffers[] = { vertexBuffer[0].GetBuffer()};
 	ID3D11Buffer* indexBuffers[] = { indexBuffer[0].GetBuffer()};
+	ID3D11Buffer* buffer = materialBufferArray->GetBuffer();
 	immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
 	immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
 	immediateContext->IASetInputLayout(inputLayout);
@@ -31,7 +32,8 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->VSSetConstantBuffers(1, 1, &viewProjBuffers);
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
-	immediateContext->OMSetRenderTargets(3, rtvArr, dsView);
+	immediateContext->PSSetConstantBuffers(0, 1, &buffer);
+	immediateContext->OMSetRenderTargets(6, rtvArr, dsView);
 
 
 	immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
@@ -174,9 +176,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	textureNames.push_back("texture.jpg");
 	textureNames.push_back("torus.png");
 
-	Material** materialArray = new Material * [nrModels];
+	Material** materialArray = new Material * [nrModels]; // MEMORY LEAK
 
-	ConstantBufferD3D11** materialBufferArray = new ConstantBufferD3D11 * [nrModels];
+	ConstantBufferD3D11** materialBufferArray = new ConstantBufferD3D11 * [nrModels]; // MEMORY LEAK
 
 	std::string missingTexture = "missing.jpg";
 	// Creates VertexBuffers for each model loaded (currently doing it manually)
@@ -188,8 +190,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	{
 		vBuffer[i] = new VertexBufferD3D11;
 		iBuffer[i] = new IndexBufferD3D11;
-		materialArray[i] = new Material;
-		materialBufferArray[i] = new ConstantBufferD3D11;
+		materialArray[i] = new Material; // MEMORY LEAK
+		materialBufferArray[i] = new ConstantBufferD3D11; // MEMORY LEAK
 	}
 
 	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, uav, dsTexture, dsView, dsState, viewport))
@@ -252,7 +254,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		constantWorldMatrixBuffer, constantViewProjMatrixBuffer, constantLightBuffer, constantMaterialBuffer,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapRtvArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
-		samplerState, modelNames, WIDTH, HEIGHT, materialArray))
+		samplerState, modelNames, WIDTH, HEIGHT, materialArray, materialBufferArray))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -348,7 +350,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	tempBufferArray[1] = &constantWorldMatrixBuffer;
 	tempBufferArray[2] = &tempBuffer2;
 
-
+	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
 
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
@@ -402,7 +404,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
 			Render(immediateContext, rtvArr, dsView, dsState, 
 				viewport, vShader, pShader, cShader ,inputLayout, 
-				vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer);
+				vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer, 
+				bufferArray, materialBufferArray[i]);
 		}
 		// Unbinding GBuffer RTVs
 		ID3D11RenderTargetView* nullRTV[1] = { nullptr };
@@ -411,7 +414,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Shading pass
 		immediateContext->CSSetShader(cShader, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
-		immediateContext->CSSetShaderResources(0, 3, srvArr);
+		immediateContext->CSSetShaderResources(0, 6, srvArr);
 		immediateContext->Dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
 

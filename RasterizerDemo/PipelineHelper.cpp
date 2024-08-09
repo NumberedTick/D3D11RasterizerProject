@@ -254,7 +254,14 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 	return !FAILED(hr);
 }
 
-bool CreateMaps(Material material, std::string& modleName)
+// Function for Creating a constant buffer for a material to be sent to the Pixel shader
+bool CreateMaterialBuffer(ID3D11Device* device, ConstantBufferD3D11*& constantBuffer, Material& material)
+{
+	constantBuffer->Initialize(device, sizeof(Material), &material);
+	return true;
+}
+
+bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName, ConstantBufferD3D11*& constantBuffer)
 {
 	objl::Loader objLoader;
 	if (!LoadObj(modleName, objLoader))
@@ -275,11 +282,14 @@ bool CreateMaps(Material material, std::string& modleName)
 	// Creation of the material
 	material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
 
+	if (!CreateMaterialBuffer(device, constantBuffer, material))
 	return true;
 }
 
+
+
 // Creation of the Vertex Buffer
-bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuffer, std::vector<std::string>& modelNames, Material**& materialArray)
+bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuffer, std::vector<std::string>& modelNames, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray)
 {
 	
 	for (int i = 0; i < modelNames.size(); i++) 
@@ -293,7 +303,7 @@ bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuf
 			return false;
 		}
 
-		if (!CreateMaps(*materialArray[i], modelNames[i]))
+		if (!CreateMaps(device, *materialArray[i], modelNames[i], materialBufferArray[i]))
 		{
 			return false;
 		}
@@ -474,41 +484,7 @@ bool CreateLightBuffer(ID3D11Device* device, ID3D11Buffer*& constantLightBuffer)
 	return !FAILED(hr);
 }
 
-// Function for Creating a constant buffer for a material to be sent to the Pixel shader
-bool CreateMaterialBuffer(ID3D11Device* device, ID3D11Buffer*& constantMaterialBuffer) 
-{
-	// Defining paramiters of the material
-	// Color values
-	std::array<float, 4> ambientColor = { 1.0f ,1.0f ,1.0f ,1.0f };
-	std::array<float, 4> diffuseColor = { 1.0f,1.0f,1.0f,1.0f };
-	std::array<float, 4> specularColor = { 1.0f,1.0f,1.0f,1.0f };
-	
-	// Material Coeficients
-	float ambientIntensity = 0.2f;
-	float padding = 0.0f; 
-	float specularPower =  100.0f;
-	
-	// Creation of the material
-	Material material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
 
-	// Descritption of a constant buffer for light
-	D3D11_BUFFER_DESC constantBufferMaterialDesc;
-	constantBufferMaterialDesc.ByteWidth = sizeof(Material);
-	constantBufferMaterialDesc.Usage = D3D11_USAGE_DYNAMIC;
-	constantBufferMaterialDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	constantBufferMaterialDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	constantBufferMaterialDesc.MiscFlags = 0;
-	constantBufferMaterialDesc.StructureByteStride = 0;
-
-	// Data for the constant light buffer
-	D3D11_SUBRESOURCE_DATA constantData;
-	constantData.pSysMem = &material;
-	constantData.SysMemPitch = 0;
-	constantData.SysMemSlicePitch = 0;
-
-	HRESULT hr = device->CreateBuffer(&constantBufferMaterialDesc, &constantData, &constantMaterialBuffer);
-	return !FAILED(hr);
-}
 
 // Function to create a constant buffer for the camera position for speculatr highlights
 bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffer)
@@ -649,7 +625,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
-	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray)
+	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, cShader,vShaderByteCode))
@@ -678,7 +654,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	}
 
 
-	if (!CreateVertexBuffer(device, vertexBuffer, modelNames, materialArray))
+	if (!CreateVertexBuffer(device, vertexBuffer, modelNames, materialArray, materialBufferArray))
 	{
 		std::cerr << "Error creating vertex buffer!" << std::endl;
 		return false;
@@ -720,12 +696,6 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		return false;
 	}
 
-	if (!CreateMaterialBuffer(device, constantMaterialBuffer))
-	{
-		std::cerr << "Error creating Constant Buffer for material!" << std::endl;
-		return false;
-	}
-
 	if (!CreateCameraBuffer(device, constantCameraBuffer))
 	{
 		std::cerr << "Error creating Constant Buffer for Camera position!" << std::endl;
@@ -753,8 +723,8 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	//deviceContext->PSSetShaderResources(0, 1, &srv);
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
 
-	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
-	deviceContext->CSSetConstantBuffers(0, 3, bufferArray);
+	ID3D11Buffer* bufferArray[2] = {constantLightBuffer, constantCameraBuffer};
+	deviceContext->CSSetConstantBuffers(0, 2, bufferArray);
 
 	//deviceContext->PSSetConstantBuffers(3, 1, &constantCameraBuffer);
 

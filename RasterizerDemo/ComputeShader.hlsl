@@ -3,6 +3,10 @@ RWTexture2D<unorm float4> backBufferUAV : register(u0);
 Texture2D<float4> positionGBuffer : register(t2);
 Texture2D<float4> colorGBuffer : register(t1);
 Texture2D<float4> normalGBuffer: register(t0);
+Texture2D<float4> ambientGBuffer : register(t3);
+Texture2D<float4> diffuesGBuffer : register(t4);
+Texture2D<float4> specularGBuffer: register(t5);
+
 
 cbuffer LightBuffer : register(b0)
 {
@@ -11,18 +15,7 @@ cbuffer LightBuffer : register(b0)
     float lightIntensity;
 };
 
-cbuffer MaterialBuffer : register(b1)
-{
-    float4 ambientRGBA;
-    float4 diffuseRGBA;
-    float4 specularRGBA;
-    float ambientIntensity;
-    float specularPower;
-    float padding;
-
-};
-
-cbuffer cameraPosition : register(b2)
+cbuffer cameraPosition : register(b1)
 {
     float4 cameraPosition;
 };
@@ -33,6 +26,14 @@ void main( uint3 DTid:SV_DispatchThreadID)
     float4 position = positionGBuffer[DTid.xy];
     float4 colour = colorGBuffer[DTid.xy];
     float3 normal = normalize(normalGBuffer[DTid.xy].xyz);
+    
+    float4 ambientRGBA = float4(ambientGBuffer[DTid.xy].xyz, 1.0f);
+    float ambientIntensity = ambientGBuffer[DTid.xy].w;
+    
+    float4 diffuseRGBA = diffuesGBuffer[DTid.xy];
+    
+    float4 specularRGBA = float4(specularGBuffer[DTid.xy].xyz, 1.0f);
+    float specularPower = specularGBuffer[DTid.xy].w;
     
     // Ambient Lighting Calculation
     float4 ambientFinal = ambientRGBA * ambientIntensity;
