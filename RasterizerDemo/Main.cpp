@@ -21,7 +21,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	UINT offset = 0;
 	ID3D11Buffer* buffers[] = { vertexBuffer[0].GetBuffer()};
 	ID3D11Buffer* indexBuffers[] = { indexBuffer[0].GetBuffer()};
-	ID3D11Buffer* buffer = materialBufferArray->GetBuffer();
+	ID3D11Buffer* materialBuffer = materialBufferArray->GetBuffer();
 	immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
 	immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
 	immediateContext->IASetInputLayout(inputLayout);
@@ -32,7 +32,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->VSSetConstantBuffers(1, 1, &viewProjBuffers);
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
-	immediateContext->PSSetConstantBuffers(0, 1, &buffer);
+	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
 	immediateContext->OMSetRenderTargets(6, rtvArr, dsView);
 
 
@@ -45,21 +45,25 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 	ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
-	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,D3D11_MAPPED_SUBRESOURCE mappedResource)
+	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,D3D11_MAPPED_SUBRESOURCE mappedResource,
+	ConstantBufferD3D11*& materialBufferArray)
 {
-	ID3D11ShaderResourceView* nullSRV = nullptr;
-	immediateContext->PSSetShaderResources(0, 1, &nullSRV);
+	//ID3D11ShaderResourceView* nullSRV = nullptr;
+	//immediateContext->PSSetShaderResources(0, 1, &nullSRV);
 
-	ID3D11RenderTargetView** tempRTVArr[3];
+	ID3D11RenderTargetView** tempRTVArr[6];
+
+	ID3D11Buffer* materialBuffer = materialBufferArray->GetBuffer();
+	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
 
 
 
 	float clearColour[4] = { 0, 0, 0, 0 };
 	for (int i = 0; i < 6; ++i) // Render relevant objects for each of the six sides in the texture cube. 
 	{
-		for (int j = 0; j < 3; ++j)
+		for (int j = 0; j < 6; ++j)
 		{
-			tempRTVArr[j] = &rtvArr[3 * i + j];
+			tempRTVArr[j] = &rtvArr[6 * i + j];
 		}
 		//cubeMapCameras[i]->UpdateInternalConstantBuffer(immediateContext); does not work, access violation
 		XMFLOAT4X4 tempFloat4X4 = cubeMapCameras[i]->GetViewProjectionMatrix();
@@ -76,19 +80,21 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		immediateContext->OMSetDepthStencilState(dsState, 0);
 		immediateContext->VSSetShader(vShader, nullptr, 0);
-		immediateContext->VSGetConstantBuffers(0, 1, &worldMatrixBuffer);
+		immediateContext->VSSetConstantBuffers(0, 1, &worldMatrixBuffer);
 		immediateContext->RSSetViewports(1, &viewport);
 		immediateContext->PSSetShader(pShader, nullptr, 0);
 
 		immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 		
-		immediateContext->OMSetRenderTargets(3, *tempRTVArr, dsView);
-
-		immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
+		immediateContext->OMSetRenderTargets(6, *tempRTVArr, dsView);
 
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 		immediateContext->ClearRenderTargetView(rtvArr[i], clearColour);
-		immediateContext->VSSetConstantBuffers(1, 0, nullptr);
+
+		immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
+
+
+		//immediateContext->VSSetConstantBuffers(1, 0, nullptr);
 	}
 	immediateContext->VSSetConstantBuffers(0, 0, nullptr);
 	ID3D11RenderTargetView* nullRTV = nullptr;
@@ -160,7 +166,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	std::vector<std::string> modelNames;
 
 
-	modelNames.push_back("room.obj");
+	modelNames.push_back("roomHoles.obj");
 	modelNames.push_back("untitled.obj");
 	modelNames.push_back("torus.obj");
 
@@ -395,7 +401,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		if(DynamicCubeMapsEnabled)
 		{
-			RenderReflectivObject(immediateContext, rtvArr2, cubeMapDSView, cubeMapDSState, cubeMapViewport, vShader, pShader, cShader, inputLayout, vBuffer[0], iBuffer[0], cubeMapCameras, &tempBuffer[0], mappedResource);
+			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[0]);
+			RenderReflectivObject(immediateContext, rtvArr2, cubeMapDSView, cubeMapDSState, cubeMapViewport, vShader, pShader, cShader, inputLayout, vBuffer[0], iBuffer[0], cubeMapCameras, &tempBuffer[0], mappedResource, materialBufferArray[0]);
 		}
 
 		// Gemoetry pass
@@ -492,7 +499,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	constantWorldMatrixBuffer->Release();
 	constantViewProjMatrixBuffer->Release();
 	constantLightBuffer->Release();
-	constantMaterialBuffer->Release();
+	//constantMaterialBuffer->Release(); // exeption unhandeled, constantMaterialBuffer was 0xFFFFFFFFFFFFFFFF
 	constantCameraBuffer->Release();
 	//cubeMapDSView->Release();
 	//cubeMapDSTexture->Release();
