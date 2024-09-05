@@ -30,7 +30,7 @@ bool CreateInterfaces(ID3D11Device*& device, ID3D11DeviceContext*& immediateCont
 	swapChainDesc.Flags = 0;
 
 	HRESULT hr = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, featureLevels, 1, D3D11_SDK_VERSION, &swapChainDesc, &swapChain, &device, nullptr, &immediateContext);
-
+	
 	return !(FAILED(hr));
 }
 
@@ -162,6 +162,8 @@ bool SetupD3D11(UINT width, UINT height, HWND window, ID3D11Device*& device,
 		std::cerr << "Error creating depth stencil state!" << std::endl;
 		return false;
 	}
+
+	
 
 	SetViewport(viewport, width, height);
 

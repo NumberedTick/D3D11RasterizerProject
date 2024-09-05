@@ -512,7 +512,7 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 
 // Function to create the Resources that only need to be created once for each texture cube
 bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& dsTexture,
-	ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState)
+	ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState, ID3D11UnorderedAccessView*& uavTextureCube)
 {
 
 	UINT cubeWidth = 1024;
@@ -551,12 +551,40 @@ bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cam
 		return false;
 	}
 
+	ID3D11Texture2D* cubeMapBackBuffer;
+	D3D11_TEXTURE2D_DESC desc;
+	desc.Width = cubeWidth;
+	desc.Height = cubeHeight;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+	desc.CPUAccessFlags = 0;
+	desc.MiscFlags = 0;
+
+	HRESULT hr = device->CreateTexture2D(&desc, nullptr, &cubeMapBackBuffer);
+	if (FAILED(hr))
+	{
+		std::cerr << "Error creating texture cube UAV Texture!" << std::endl;
+		return false;
+	}
+
+	hr = device->CreateUnorderedAccessView(cubeMapBackBuffer, NULL, &uavTextureCube);
+	if (FAILED(hr))
+	{
+		std::cerr << "Error creating texture cube UAV!" << std::endl;
+		return false;
+	}
+	cubeMapBackBuffer->Release();
 	return true;
 
 }
 
 // Function To create the resouces that are needed for each texture cube
-bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV, UINT currentIndex)
+bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV)
 {
 	UINT cubeWidth = 1024;
 	UINT cubeHeight = 1024;
@@ -591,7 +619,7 @@ bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, I
 	for (int i = 0; i < 6; ++i)
 	{
 		rtvDesc.Texture2DArray.FirstArraySlice = i;
-		hr = device->CreateRenderTargetView(cubeMapTexture, &rtvDesc, &cubeMapRTVArray[i+currentIndex*6]);
+		hr = device->CreateRenderTargetView(cubeMapTexture, &rtvDesc, &cubeMapRTVArray[i]);
 
 		if (FAILED(hr))
 		{
@@ -625,7 +653,8 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
-	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray)
+	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, 
+	ID3D11UnorderedAccessView*& uavTextureCube)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, cShader,vShaderByteCode))
@@ -702,7 +731,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		return false;
 	}	
 	
-	if (!CreateTextrueCubeReusableResources(device, cameraArray, cubeMapViewport, cubeMapDSTexture, cubeMapDSView, cubeMapDSState))
+	if (!CreateTextrueCubeReusableResources(device, cameraArray, cubeMapViewport, cubeMapDSTexture, cubeMapDSView, cubeMapDSState, uavTextureCube))
 	{
 		std::cerr << "Error creating Reusable TextureCube Resources!" << std::endl;
 		return false;
