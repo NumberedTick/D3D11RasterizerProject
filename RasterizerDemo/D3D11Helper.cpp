@@ -143,8 +143,6 @@ bool SetupD3D11(UINT width, UINT height, HWND window, ID3D11Device*& device,
 		return false;
 	}
 	
-	
-	
 	if (!CreateUnorderedAccessView(device, swapChain, uav))
 	{
 		std::cerr << "Error creating rtv!" << std::endl;
@@ -162,8 +160,6 @@ bool SetupD3D11(UINT width, UINT height, HWND window, ID3D11Device*& device,
 		std::cerr << "Error creating depth stencil state!" << std::endl;
 		return false;
 	}
-
-	
 
 	SetViewport(viewport, width, height);
 

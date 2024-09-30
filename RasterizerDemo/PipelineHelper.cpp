@@ -173,23 +173,12 @@ bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 		return false;
 	}
 
-
 	// Loads indices into a vector
 	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
 	{
 		indices.push_back(objLoader.LoadedIndices[i]);
 
 	}
-
-	// Swaps every second and thrid element in the vector due to the OBJ parder being made for OpenGLs right handed rendering
-	/*
-	for (int i = 0; i < objLoader.LoadedIndices.size() / 3; ++i)
-	{
-		int temp = indices[3 * i + 1];
-		indices[3 * i + 1] = indices[3 * i + 2];
-		indices[3 * i + 2] = temp;
-	}
-	*/
 
 
 }
@@ -283,6 +272,9 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
 
 	if (!CreateMaterialBuffer(device, constantBuffer, material))
+	{
+		return false;
+	}
 	return true;
 }
 
@@ -312,7 +304,9 @@ bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuf
 		// Buffer des for vertex Buffer
 
 		if (testVertexBuffer[i]->GetBuffer() == nullptr)
+		{
 			return false;
+		}
 	}
 
 	return true;
@@ -698,23 +692,6 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	}
 	
 
-	/*
-	if (!Create2DTexture(device, texture))
-	{
-		std::cerr << "Error creating 2D Texture" << std::endl;
-		return false;
-	}
-	*/
-	
-	/*
-	if (!CreateSRV(device, texture, srv))
-	{
-		std::cerr << "Error creating Shader Resorse View!" << std::endl;
-		return false;
-	}
-	*/
-	
-
 	if (!CreateSampler(device, sampleState))
 	{
 		std::cerr << "Error creating Sampler!" << std::endl;
@@ -755,7 +732,6 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11Buffer* bufferArray[2] = {constantLightBuffer, constantCameraBuffer};
 	deviceContext->CSSetConstantBuffers(0, 2, bufferArray);
 
-	//deviceContext->PSSetConstantBuffers(3, 1, &constantCameraBuffer);
 
 	return true;
 }

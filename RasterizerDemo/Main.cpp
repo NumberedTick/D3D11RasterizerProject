@@ -49,14 +49,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV)
 {
 	
-	//immediateContext->PSSetShaderResources(0, 1, &nullSRV);
-
-
-	//ID3D11ShaderResourceView* srvArr[6];
 	ID3D11RenderTargetView* nullRTV = nullptr;
-
-	//srvArr = gBufferCubeMapSRV[0];
-
 
 	ID3D11Buffer* materialBuffer = materialBufferArray->GetBuffer();
 	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
@@ -77,10 +70,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		{
 			immediateContext->ClearRenderTargetView(rtvArr[j], clearColour);
 		}
-			
-		
 
-		//cubeMapCameras[i]->UpdateInternalConstantBuffer(immediateContext); does not work, access violation
 		XMFLOAT4X4 tempFloat4X4 = cubeMapCameras[i]->GetViewProjectionMatrix();
 		cubeMapCameras[i]->UpdateInternalConstantBuffer(immediateContext);
 		ID3D11Buffer* currentBuffer = cubeMapCameras[i]->GetConstantBuffer();
@@ -93,25 +83,19 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		immediateContext->VSSetConstantBuffers(0, 1, &worldMatrixBuffer);
 		immediateContext->RSSetViewports(1, &viewport);
 		immediateContext->PSSetShader(pShader, nullptr, 0);
-
 		immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
-		
+
 		immediateContext->OMSetRenderTargets(6, rtvArr, dsView);
 
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
-		
-
 		immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
-
 
 		immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr);
 
 		immediateContext->CSSetShader(cShader, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &cubeMapUavArray[i], nullptr);
 		immediateContext->CSSetShaderResources(0, 6, gBufferCubeMapSRV);
-		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);
-		//immediateContext->VSSetConstantBuffers(1, 0, nullptr);
-		
+		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);		
 	}
 	immediateContext->VSSetConstantBuffers(0, 0, nullptr);
 	immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr); 
@@ -134,7 +118,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	// Enable/disable cubemaps
-	bool DynamicCubeMapsEnabled = true;
+	bool DynamicCubeMapsEnabled = true; // Might remove and replace with Dear ImGui for dynamic toggle
 
 	ID3D11Device* device;
 	ID3D11DeviceContext* immediateContext;
@@ -161,7 +145,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 	// creation of the needed things for the cubemap
-	// UPDATE CreateTextureCube(...) to use these resorces instead 
 	ID3D11Texture2D* cubeMapTexture;
 	ID3D11UnorderedAccessView** cubeMapUavArray = new ID3D11UnorderedAccessView * [6];
 	ID3D11ShaderResourceView* cubeMapSrv;
@@ -224,8 +207,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-		// Creationg of the GBuffers
-
+	// Creationg of the GBuffers
 	const unsigned int nrOfGBuffers = 6;
 
 	ID3D11Texture2D** gBuffer = new ID3D11Texture2D * [nrOfGBuffers];
@@ -234,30 +216,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11RenderTargetView* rtvArr[nrOfGBuffers];
 	ID3D11ShaderResourceView* srvArr[nrOfGBuffers];
 
-	/*
-	if (DynamicCubeMapsEnabled)
-	{
-		if (!CreateTextureCube(device, cubeMapTexture, cubeMapUavArray, cubeMapSrv))
-		{
-			std::cerr << "Error creating G-Buffer for Texture Cube!" << std::endl;
-			return false;
-		}
-	}
-	*/
-	// 
-	// REMOVE, MOST LIKELY NOT NEEDED
-	//ID3D11RenderTargetView** gBufferTextureRtvOLD = new ID3D11RenderTargetView* [nrOfGBuffers*6];
-	//ID3D11RenderTargetView* cubeMapRtvArrOLD[nrOfGBuffers*6];
-	// REMOVE, MOST LIKELY NOT NEEDED
-
-	// texture cube buffers
+	// Creation of Cube Mapping gBuffers for deffered rendering
 	ID3D11Texture2D** gTextureBuffer = new ID3D11Texture2D * [nrOfGBuffers];
 	ID3D11RenderTargetView** gBufferTextureRtv = new ID3D11RenderTargetView* [nrOfGBuffers];
 	ID3D11ShaderResourceView** gBufferCubeMapSRV = new ID3D11ShaderResourceView * [nrOfGBuffers];
 	ID3D11RenderTargetView* cubeMapRtvGBufferArr[nrOfGBuffers];
 	ID3D11ShaderResourceView* cubeMapSrvGBufferArr[nrOfGBuffers];
-
-	
 
 
 	for (int i = 0; i < nrOfGBuffers; ++i)
@@ -272,8 +236,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		rtvArr[i] = gBufferRtv[i];
 		srvArr[i] = gBufferSrv[i];
 
-
-		// CHANGE TO ONLY CREATE 6 TEXTRURES OF SQUARE SIZE, 6 RTVS AND 6 SRVS
 		if (DynamicCubeMapsEnabled)
 		{
 
@@ -285,23 +247,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 			cubeMapRtvGBufferArr[i] = gBufferTextureRtv[i];
 			cubeMapSrvGBufferArr[i] = gBufferCubeMapSRV[i];
-
-			/* REMOVE REMOVE REMOVE
-			if (!CreateTextureCube(device, gTextureBuffer[i], gBufferTextureRtvOLD, gBufferCubeMapSRV[i]))
-			{
-				std::cerr << "Error creating g-buffers for Texture Cube";
-				return false;
-			}
-			
-			for (int j = 0; j < 6; ++j)
-			{
-				cubeMapRtvArrOLD[i * 6 + j] = gBufferTextureRtvOLD[i * 6 + j];
-			}
-			gBufferCubeMapSRV[i] = gBufferCubeMapSRV[i];
-			*/
-			
 		}
-		// CHANGE TO ONLY CREATE 6 TEXTRURES OF SQUARE SIZE, 6 RTVS AND 6 SRVS
 	}
 
 
@@ -314,7 +260,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
 	}
-
 
 	
 	// Creation of the needed textures for each model
@@ -353,8 +298,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		
 	}
 	
-	
-
 
 	MSG msg = { };
 
@@ -446,9 +389,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
-		//immediateContext->ClearRenderTargetView(rtv, clearColour);
-		
-
 
 		// Gemoetry pass
 		for (int i = 0; i < nrModels; ++i)
@@ -519,7 +459,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	delete[] gBufferRtv;
 	delete[] gBufferSrv;
 
-	//srv->Release();
 	samplerState->Release();
 	for (int i = 0; i < nrModels; ++i)
 	{
