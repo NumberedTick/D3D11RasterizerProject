@@ -572,19 +572,21 @@ bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cam
 		return false;
 	}
 
+
 	hr = device->CreateUnorderedAccessView(cubeMapBackBuffer, NULL, &uavTextureCube);
 	if (FAILED(hr))
 	{
 		std::cerr << "Error creating texture cube UAV!" << std::endl;
 		return false;
 	}
+
 	cubeMapBackBuffer->Release();
 	return true;
 
 }
 
 // Function To create the resouces that are needed for each texture cube
-bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray, ID3D11ShaderResourceView*& cubeMapSRV)
+bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray, ID3D11ShaderResourceView*& cubeMapSRV)
 {
 	UINT cubeWidth = 1024;
 	UINT cubeHeight = 1024;
@@ -600,7 +602,7 @@ bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, I
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
@@ -610,20 +612,20 @@ bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, I
 		return !FAILED(hr);
 	}
 
-	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-	rtvDesc.Texture2DArray.ArraySize = 1; 
-	rtvDesc.Texture2DArray.MipSlice = 0;
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+	uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+	uavDesc.Texture2DArray.ArraySize = 1;
+	uavDesc.Texture2DArray.MipSlice = 0;
 
 	for (int i = 0; i < 6; ++i)
 	{
-		rtvDesc.Texture2DArray.FirstArraySlice = i;
-		hr = device->CreateRenderTargetView(cubeMapTexture, &rtvDesc, &cubeMapRTVArray[i]);
+		uavDesc.Texture2DArray.FirstArraySlice = i;
+		hr = device->CreateUnorderedAccessView(cubeMapTexture, &uavDesc, &cubeMapUavArray[i]);
 
 		if (FAILED(hr))
 		{
-			return FAILED(hr);
+			return !FAILED(hr);
 		}
 	}
 
@@ -631,7 +633,7 @@ bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, I
 
 	if (FAILED(hr))
 	{
-		return FAILED(hr);
+		return !FAILED(hr);
 	}
 
 	return true;
@@ -651,7 +653,7 @@ enum TEXTURE_CUBE_FACE_INDEX
 bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
-	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11RenderTargetView**& cubeMapRTVArray,ID3D11ShaderResourceView*& cubeMapSrv, 
+	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, 
 	ID3D11UnorderedAccessView*& uavTextureCube)
@@ -737,13 +739,11 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 		return false;
 	}
 
-	/*
-	if (!CreateTextureCube(device, cubeMapTexture, cubeMapRTVArray, cubeMapSrv))
+	if (!CreateTextureCube(device, cubeMapTexture, cubeMapUavArray, cubeMapSrv))
 	{
-		std::cerr << "Error creating TextureCube!" << std::endl;
+		std::cerr << "Error creating G-Buffer for Texture Cube!" << std::endl;
 		return false;
 	}
-	*/
 	
 
 	// Binding the necessary Buffers and Resources to the diffrent shaders

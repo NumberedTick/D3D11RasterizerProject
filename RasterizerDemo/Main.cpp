@@ -44,7 +44,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 
 void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-	ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader, ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
+	ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
 	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,D3D11_MAPPED_SUBRESOURCE mappedResource,
 	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV)
 {
@@ -107,7 +107,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr);
 
 		immediateContext->CSSetShader(cShader, nullptr, 0);
-		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		immediateContext->CSSetUnorderedAccessViews(0, 1, &cubeMapUavArray[i], nullptr);
 		immediateContext->CSSetShaderResources(0, 6, gBufferCubeMapSRV);
 		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);
 		//immediateContext->VSSetConstantBuffers(1, 0, nullptr);
@@ -163,7 +163,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// creation of the needed things for the cubemap
 	// UPDATE CreateTextureCube(...) to use these resorces instead 
 	ID3D11Texture2D* cubeMapTexture;
-	ID3D11RenderTargetView** cubeMapRtvArray = new ID3D11RenderTargetView * [6];
+	ID3D11UnorderedAccessView** cubeMapUavArray = new ID3D11UnorderedAccessView * [6];
 	ID3D11ShaderResourceView* cubeMapSrv;
 
 	CameraD3D11** cubeMapCameras = new CameraD3D11 * [6];
@@ -234,16 +234,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11RenderTargetView* rtvArr[nrOfGBuffers];
 	ID3D11ShaderResourceView* srvArr[nrOfGBuffers];
 
-
+	/*
 	if (DynamicCubeMapsEnabled)
 	{
-		if (!CreateTextureCube(device, cubeMapTexture, cubeMapRtvArray, cubeMapSrv))
+		if (!CreateTextureCube(device, cubeMapTexture, cubeMapUavArray, cubeMapSrv))
 		{
 			std::cerr << "Error creating G-Buffer for Texture Cube!" << std::endl;
 			return false;
 		}
 	}
-
+	*/
 	// 
 	// REMOVE, MOST LIKELY NOT NEEDED
 	//ID3D11RenderTargetView** gBufferTextureRtvOLD = new ID3D11RenderTargetView* [nrOfGBuffers*6];
@@ -307,7 +307,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, cShader,inputLayout, 
 		constantWorldMatrixBuffer, constantViewProjMatrixBuffer, constantLightBuffer, constantMaterialBuffer,
-		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapRtvArray,
+		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
 		samplerState, modelNames, WIDTH, HEIGHT, materialArray, materialBufferArray, uavTextureCube))
 	{
@@ -376,7 +376,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// TEMP VALAUES USED UNTIL I SWITCH MAIN CAMERA TO A CAMERA OBJECT
 
-	XMMATRIX baselineWorldMatrix = CreateWorldMatrix(0.0f, 0.0f, 0.0f, -0.5f);
+	XMMATRIX baselineWorldMatrix = CreateWorldMatrix(XM_PIDIV4, 0.0f, 0.0f, -0.5f);
 	XMStoreFloat4x4(&float4x4Array[1], baselineWorldMatrix);
 
 	XMMATRIX newWorldMatrix = CreateWorldMatrix(XM_PIDIV2, -xDist, 0.0f, -0.5f);
@@ -407,6 +407,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
 
+
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
@@ -419,7 +420,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		auto startTime = std::chrono::high_resolution_clock::now();
 
 		// creation of the new world matrix for the rotation
-		XMMATRIX newWorldMatrix = CreateWorldMatrix(rotationAmount, xDist, yDist, zDist);
+		newWorldMatrix = CreateWorldMatrix(rotationAmount, xDist, yDist, zDist);
 		XMStoreFloat4x4(&float4x4Array[0], newWorldMatrix);
 
 		// Mapping the new world matrix to the vertex shader
@@ -434,7 +435,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[0]);
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState, 
-				cubeMapViewport, vShader, pShader, cShader, inputLayout, vBuffer[0], iBuffer[0], 
+				cubeMapViewport, vShader, pShader, cShader, cubeMapUavArray ,inputLayout, vBuffer[0], iBuffer[0], 
 				cubeMapCameras, &tempBuffer[0], mappedResource, materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV);
 		}
 
@@ -535,10 +536,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	for (int i = 0; i < 6; ++i)
 	{
-		//cubeMapRtvArray[i]->Release();
+		cubeMapUavArray[i]->Release();
 	}
 	
-	delete[] cubeMapRtvArray;
+	delete[] cubeMapUavArray;
 	//cubeMapTexture->Release();
 	constantWorldMatrixBuffer->Release();
 	constantViewProjMatrixBuffer->Release();
