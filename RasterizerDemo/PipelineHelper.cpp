@@ -17,7 +17,7 @@
 
 using namespace DirectX;
 
-bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,std::string& vShaderByteCode)
+bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader ,std::string& vShaderByteCode)
 {
 	std::string shaderData;
 	std::ifstream reader;
@@ -66,6 +66,31 @@ bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11Pixel
 
 	shaderData.clear();
 	reader.close();
+
+	reader.open("CubeMapPixelShader.cso", std::ios::binary | std::ios::ate);
+	if (!reader.is_open())
+	{
+		std::cerr << "Could not open Cube Map PS file!" << std::endl;
+		return false;
+	}
+
+	reader.seekg(0, std::ios::end);
+	shaderData.reserve(static_cast<unsigned int>(reader.tellg()));
+	reader.seekg(0, std::ios::beg);
+
+	shaderData.assign((std::istreambuf_iterator<char>(reader)),
+		std::istreambuf_iterator<char>());
+
+	if (FAILED(device->CreatePixelShader(shaderData.c_str(), shaderData.length(), nullptr, &pShaderCubeMap)))
+	{
+		std::cerr << "Failed to create Cube Map pixel shader!" << std::endl;
+		return false;
+	}
+
+	shaderData.clear();
+	reader.close();
+
+
 	reader.open("ComputeShader.cso", std::ios::binary | std::ios::ate);
 	if (!reader.is_open())
 	{
@@ -645,7 +670,7 @@ enum TEXTURE_CUBE_FACE_INDEX
 
 
 bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
-	ID3D11PixelShader*& pShader, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
+	ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
@@ -653,7 +678,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11UnorderedAccessView*& uavTextureCube)
 {
 	std::string vShaderByteCode;
-	if (!LoadShaders(device, vShader, pShader, cShader,vShaderByteCode))
+	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap,cShader,vShaderByteCode))
 	{
 		std::cerr << "Error loading shaders!" << std::endl;
 		return false;

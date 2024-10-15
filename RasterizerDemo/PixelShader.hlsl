@@ -4,6 +4,7 @@ SamplerState samplerState : register(s0);
 struct PixelShaderInput
 {
 	float4 position : SV_POSITION;
+    float3 worldPos : WORLDS_POS;
 	float3 normal : NORMAL;
 	float2 uvcoords : UVCOORDS;
 };
@@ -16,6 +17,7 @@ struct PixelShaderOutput
     float4 ambient : SV_Target3;
     float4 diffuse : SV_Target4;
     float4 specular : SV_Target5;
+    float4 worldPos : SV_Target6;
 };
 
 
@@ -41,6 +43,7 @@ PixelShaderOutput main(PixelShaderInput input)
     output.ambient = float4(ambientRGBA.xyz, ambientIntensity);
     output.diffuse = diffuseRGBA;
     output.specular = float4(specularRGBA.xyz, specularPower);
+    output.worldPos = float4(input.worldPos,1.0f);
 	
         return output;
     };

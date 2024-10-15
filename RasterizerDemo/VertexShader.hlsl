@@ -8,6 +8,7 @@ struct VertexInput
 struct VertexOutput
 {
     float4 position : SV_POSITION;
+    float3 worldPos : WORLDS_POS;
     float3 normal : NORMAL;
     float2 uvcoords : UVCOORDS;
 };
@@ -31,6 +32,10 @@ VertexOutput main(VertexInput input)
     vertexPosition = mul(vertexPosition, viewProjection);
     output.position = vertexPosition;
 
+    // Tranmsform vertex to worldPos only
+    float3 vertexWorldPos = mul(input.position, world);
+    output.worldPos = vertexWorldPos;
+    
     // Transform vertex normal
     float3 vertexNormal = mul(input.normal, (float3x3)world);
     output.normal = normalize(mul(vertexNormal, (float3x3)viewProjection));

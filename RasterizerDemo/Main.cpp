@@ -15,7 +15,8 @@
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 			ID3D11PixelShader* pShader, ID3D11ComputeShader* cShader,ID3D11InputLayout* inputLayout, VertexBufferD3D11* vertexBuffer, 
-			IndexBufferD3D11* indexBuffer, ID3D11Buffer* tempConstantBuffer, ID3D11Buffer* viewProjBuffers, ID3D11Buffer* bufferArray[3], ConstantBufferD3D11*& materialBufferArray)
+			IndexBufferD3D11* indexBuffer, ID3D11Buffer* tempConstantBuffer, ID3D11Buffer* viewProjBuffers, ID3D11Buffer* bufferArray[3], 
+			ConstantBufferD3D11*& materialBufferArray, const unsigned int nrOfGBuffers)
 {
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
@@ -33,7 +34,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
-	immediateContext->OMSetRenderTargets(6, rtvArr, dsView);
+	immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
 
 
 	immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
@@ -46,7 +47,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 	ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
 	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,D3D11_MAPPED_SUBRESOURCE mappedResource,
-	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV)
+	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers)
 {
 	
 	ID3D11RenderTargetView* nullRTV = nullptr;
@@ -66,7 +67,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 	{
 
 
-		for (int j = 0; j < 6; ++j)
+		for (int j = 0; j < nrOfGBuffers; ++j)
 		{
 			immediateContext->ClearRenderTargetView(rtvArr[j], clearColour);
 		}
@@ -85,7 +86,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		immediateContext->PSSetShader(pShader, nullptr, 0);
 		immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 
-		immediateContext->OMSetRenderTargets(6, rtvArr, dsView);
+		immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
 
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 		immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
@@ -94,7 +95,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 
 		immediateContext->CSSetShader(cShader, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &cubeMapUavArray[i], nullptr);
-		immediateContext->CSSetShaderResources(0, 6, gBufferCubeMapSRV);
+		immediateContext->CSSetShaderResources(0, nrOfGBuffers, gBufferCubeMapSRV);
 		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);		
 	}
 	immediateContext->VSSetConstantBuffers(0, 0, nullptr);
@@ -130,6 +131,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	D3D11_VIEWPORT viewport;
 	ID3D11VertexShader* vShader;
 	ID3D11PixelShader* pShader;
+	ID3D11PixelShader* pShaderCubeMap;
 	ID3D11ComputeShader* cShader;
 	ID3D11InputLayout* inputLayout;
 	ID3D11Buffer* constantWorldMatrixBuffer;
@@ -172,7 +174,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	modelNames.push_back("torus.obj");
 
 	//modelNames.push_back("monkey.obj");
-	//modelNames.push_back("untitled1.obj");
+	modelNames.push_back("untitled1.obj");
 
 	UINT nrModels = static_cast<UINT>(modelNames.size());
 
@@ -251,7 +253,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 
-	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, cShader,inputLayout, 
+	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, pShaderCubeMap, cShader, inputLayout, 
 		constantWorldMatrixBuffer, constantViewProjMatrixBuffer, constantLightBuffer, constantMaterialBuffer,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
@@ -343,10 +345,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* tempBuffer2;
 	tempBuffer2 = newWorldMatrixBuffer.GetBuffer();
 
-	ID3D11Buffer** tempBufferArray[3];
+	ID3D11Buffer** tempBufferArray[4];
 	tempBufferArray[0] = &tempBuffer;
 	tempBufferArray[1] = &constantWorldMatrixBuffer;
 	tempBufferArray[2] = &tempBuffer2;
+	tempBufferArray[3] = &tempBuffer;
 
 	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
 
@@ -379,7 +382,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[0]);
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState, 
 				cubeMapViewport, vShader, pShader, cShader, cubeMapUavArray ,inputLayout, vBuffer[0], iBuffer[0], 
-				cubeMapCameras, &tempBuffer[0], mappedResource, materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV);
+				cubeMapCameras, &tempBuffer[0], mappedResource, materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
 		}
 
 		// Cleararing from last frame of main rendering
@@ -393,11 +396,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Gemoetry pass
 		for (int i = 0; i < nrModels; ++i)
 		{
-			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
-			Render(immediateContext, rtvArr, dsView, dsState, 
-				viewport, vShader, pShader, cShader ,inputLayout, 
-				vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer, 
-				bufferArray, materialBufferArray[i]);
+			if (i == 3)
+			{
+				// render reflective object
+				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
+				Render(immediateContext, rtvArr, dsView, dsState,
+					viewport, vShader, pShaderCubeMap, cShader, inputLayout,
+					vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer,
+					bufferArray, materialBufferArray[i], nrOfGBuffers);
+					
+			}
+			else
+			{
+				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
+				Render(immediateContext, rtvArr, dsView, dsState,
+					viewport, vShader, pShader, cShader, inputLayout,
+					vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer,
+					bufferArray, materialBufferArray[i], nrOfGBuffers);
+			}
+			
 		}
 		// Unbinding GBuffer RTVs
 		ID3D11RenderTargetView* nullRTV[1] = { nullptr };
@@ -406,7 +423,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Shading pass
 		immediateContext->CSSetShader(cShader, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
-		immediateContext->CSSetShaderResources(0, 6, srvArr);
+		immediateContext->CSSetShaderResources(0, nrOfGBuffers, srvArr);
 		immediateContext->Dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
 

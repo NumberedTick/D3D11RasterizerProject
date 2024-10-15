@@ -162,7 +162,7 @@ bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11Render
 
 bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray, ID3D11ShaderResourceView*& cubeMapSRV);
 
-bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader,	
+bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap,
 	ID3D11ComputeShader*& cShader,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer, ID3D11Buffer*& constantLightPixel, 
 	ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,
 	ID3D11ShaderResourceView*& cubeMapSrv, CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState, 
