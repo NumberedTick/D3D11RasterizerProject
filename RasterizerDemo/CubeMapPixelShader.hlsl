@@ -50,9 +50,10 @@ PixelShaderOutput main(PixelShaderInput input)
     float4 sampledValue = reflectionTexture.Sample(standardSampler, reflectedView);
     
     output.colour = sampledValue;
+    //output.colour = float4(ambientRGBA.xyz, 1);
     output.normal = float4(input.normal, 0);
     output.position = input.position;
-    output.ambient = float4(ambientRGBA.xyz, ambientIntensity);
+    output.ambient = float4(ambientRGBA.xyz, 1);
     output.diffuse = diffuseRGBA;
     output.specular = float4(specularRGBA.xyz, specularPower);
 	

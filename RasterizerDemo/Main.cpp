@@ -399,6 +399,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			if (i == 3)
 			{
 				// render reflective object
+				//immediateContext->PSSetShaderResources(0, 1, &cubeMapSrv);
 				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShaderCubeMap, cShader, inputLayout,

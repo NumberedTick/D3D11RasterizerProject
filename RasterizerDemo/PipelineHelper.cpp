@@ -599,6 +599,7 @@ bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cam
 		return false;
 	}
 
+
 	cubeMapBackBuffer->Release();
 	return true;
 
@@ -648,7 +649,15 @@ bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, I
 		}
 	}
 
-	hr = device->CreateShaderResourceView(cubeMapTexture, nullptr, &cubeMapSRV);
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	srvDesc.Texture2DArray.ArraySize = 6;
+	srvDesc.Texture2DArray.MipLevels = 1;
+	srvDesc.Texture2DArray.FirstArraySlice = 0;
+	srvDesc.Texture2DArray.MostDetailedMip = 0;
+
+	hr = device->CreateShaderResourceView(cubeMapTexture, &srvDesc, &cubeMapSRV);
 
 	if (FAILED(hr))
 	{
