@@ -652,12 +652,12 @@ bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, I
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	srvDesc.Texture2DArray.ArraySize = 6;
+	srvDesc.Texture2DArray.ArraySize = 1;
 	srvDesc.Texture2DArray.MipLevels = 1;
 	srvDesc.Texture2DArray.FirstArraySlice = 0;
 	srvDesc.Texture2DArray.MostDetailedMip = 0;
 
-	hr = device->CreateShaderResourceView(cubeMapTexture, &srvDesc, &cubeMapSRV);
+	hr = device->CreateShaderResourceView(cubeMapTexture, nullptr, &cubeMapSRV);
 
 	if (FAILED(hr))
 	{
@@ -762,6 +762,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	
 	//deviceContext->PSSetShaderResources(0, 1, &srv);
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
+
 
 	ID3D11Buffer* bufferArray[2] = {constantLightBuffer, constantCameraBuffer};
 	deviceContext->CSSetConstantBuffers(0, 2, bufferArray);

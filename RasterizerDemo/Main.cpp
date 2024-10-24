@@ -400,11 +400,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			{
 				// render reflective object
 				//immediateContext->PSSetShaderResources(0, 1, &cubeMapSrv);
-				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
+				immediateContext->PSSetShaderResources(0, 1, &cubeMapSrv);
+				immediateContext->PSSetConstantBuffers(1, 1, &constantCameraBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShaderCubeMap, cShader, inputLayout,
 					vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
+				immediateContext->PSSetConstantBuffers(1, 0, nullptr);
 					
 			}
 			else
