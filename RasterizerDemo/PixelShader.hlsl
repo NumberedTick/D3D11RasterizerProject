@@ -39,7 +39,7 @@ PixelShaderOutput main(PixelShaderInput input)
 	
     output.colour = textureMap.Sample(samplerState, input.uvcoords);
     output.normal = float4(input.normal, 0);
-    output.position = input.position;
+    output.position = float4(input.worldPos, 0);
     output.ambient = float4(ambientRGBA.xyz, ambientIntensity);
     output.diffuse = diffuseRGBA;
     output.specular = float4(specularRGBA.xyz, specularPower);

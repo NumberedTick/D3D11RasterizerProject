@@ -80,15 +80,18 @@ struct ConstantBuffer
 
 struct PointLight 
 {
-	float lightPosition[4];
+	float lightPosition[3];
 	float lightColor[4];
 	float lightIntencity;
 
-	PointLight(const std::array<float, 4>& otherLightPosition, const std::array<float, 4>& otherLightColor, const float& otherLightIntensity)
+	PointLight(const std::array<float, 3>& otherLightPosition, const std::array<float, 4>& otherLightColor, const float& otherLightIntensity)
 	{
-		for (int i = 0; i < 4; ++i) 
+		for (int i = 0; i < 3; ++i) 
 		{
 			lightPosition[i] = otherLightPosition[i];
+		}
+		for (int i = 0; i < 4; ++i)
+		{
 			lightColor[i] = otherLightColor[i];
 		}
 

@@ -289,7 +289,7 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	std::array<float, 4> specularColor = { objLoader.LoadedMaterials[0].Ks.X,objLoader.LoadedMaterials[0].Ks.Y,objLoader.LoadedMaterials[0].Ks.Z,1.0f };
 
 	// Material Coeficients
-	float ambientIntensity = 0.2f;
+	float ambientIntensity = 0.0f;
 	float padding = 0.0f;
 	float specularPower = objLoader.LoadedMaterials[0].Ns;
 
@@ -476,9 +476,9 @@ bool CreateSampler(ID3D11Device* device, ID3D11SamplerState*& samplerState)
 bool CreateLightBuffer(ID3D11Device* device, ID3D11Buffer*& constantLightBuffer)
 {
 	// Deffining the pramiters for the light in view space
-	std::array<float, 4> lightPosition = { 512.0f, 288.0f, 175.0f, 0.0f};
+	std::array<float, 3> lightPosition = { 1.0f, 0.0f, -3.5f };
 	std::array<float, 4> lightColor = { 1.0f, 1.0f, 1.0f, 1.0f};
-	float lightIntencity = 50.0f;
+	float lightIntencity = 1.0f;
 
 	// Creation of a point light
 	PointLight pointLight = { lightPosition,  lightColor, lightIntencity};
@@ -509,7 +509,7 @@ bool CreateLightBuffer(ID3D11Device* device, ID3D11Buffer*& constantLightBuffer)
 bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffer)
 {
 	// Creation of an array that can be uploaded to the Pixel Shader in view space
-	std::array<float, 4> cameraPosition = { 512, 288, 496.5f, 0.0f };
+	std::array<float, 4> cameraPosition = { 0.0f, 0.0f, -3.5f };
 
 	D3D11_BUFFER_DESC constantCameraBufferDesc;
 	constantCameraBufferDesc.ByteWidth = sizeof(cameraPosition);

@@ -52,7 +52,7 @@ PixelShaderOutput main(PixelShaderInput input)
     output.colour = sampledValue;
     //output.colour = float4(ambientRGBA.xyz, 1);
     output.normal = float4(input.normal, 0);
-    output.position = input.position;
+    output.position = float4(input.worldPos, 0);
     output.ambient = float4(ambientRGBA.xyz, 1);
     output.diffuse = diffuseRGBA;
     output.specular = float4(specularRGBA.xyz, specularPower);

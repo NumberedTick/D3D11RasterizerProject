@@ -10,20 +10,20 @@ Texture2D<float4> specularGBuffer: register(t5);
 
 cbuffer LightBuffer : register(b0)
 {
-    float4 lightPosition;
+    float3 lightPosition;
     float4 lightColor;
     float lightIntensity;
 };
 
 cbuffer cameraPosition : register(b1)
 {
-    float4 cameraPosition;
+    float3 cameraPosition;
 };
 
 [numthreads(8, 8, 1)]
 void main( uint3 DTid:SV_DispatchThreadID)
 {
-    float4 position = positionGBuffer[DTid.xy];
+    float3 position = positionGBuffer[DTid.xy];
     float4 colour = colorGBuffer[DTid.xy];
     float3 normal = normalize(normalGBuffer[DTid.xy].xyz);
     
@@ -39,18 +39,18 @@ void main( uint3 DTid:SV_DispatchThreadID)
     float4 ambientFinal = ambientRGBA * ambientIntensity;
     
     // Diffuse Lighting Calculation
-    float4 lightDirectionVector = lightPosition - position;
+    float3 lightDirectionVector = lightPosition - position;
     float lightRadius = length(lightDirectionVector);
-    float4 lightVector = (1 / lightRadius) * lightDirectionVector;
+    float3 lightVector = (1 / lightRadius) * lightDirectionVector;
     float normalCheck = max(dot(normal, lightDirectionVector.xyz), 0);
     float quadIntensity = 1 / (pow(lightRadius, 2)) * lightIntensity;
     
     float4 diffuseFinal = lightColor * quadIntensity * normalCheck * diffuseRGBA;
     
     // Specular Highlight Calculation
-    float4 cameraDirectionVector = cameraPosition - position;
-    float4 cameraVector = (1 / length(cameraDirectionVector)) * cameraDirectionVector; // v
-    float4 halfVector = (lightVector + cameraVector) / (length(lightVector + cameraVector)); // h
+    float3 cameraDirectionVector = cameraPosition - position;
+    float3 cameraVector = (1 / length(cameraDirectionVector)) * cameraDirectionVector; // v
+    float3 halfVector = (lightVector + cameraVector) / (length(lightVector + cameraVector)); // h
     float specularIntensity = pow(max(dot(normal, halfVector.xyz), 0), specularPower);
 
     float4 specularFinal = lightColor * specularRGBA * specularIntensity;

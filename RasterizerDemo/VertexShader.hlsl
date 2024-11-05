@@ -33,7 +33,7 @@ VertexOutput main(VertexInput input)
     output.position = vertexPosition;
 
     // Tranmsform vertex to worldPos only
-    float3 vertexWorldPos = mul(input.position, world);
+    float3 vertexWorldPos = mul(float4(input.position, 0.0f), world).xyz;
     output.worldPos = vertexWorldPos;
     
     // Transform vertex normal
