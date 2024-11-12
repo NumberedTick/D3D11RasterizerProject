@@ -80,9 +80,10 @@ struct ConstantBuffer
 
 struct PointLight 
 {
+	float lightIntencity;
 	float lightPosition[3];
 	float lightColor[4];
-	float lightIntencity;
+
 
 	PointLight(const std::array<float, 3>& otherLightPosition, const std::array<float, 4>& otherLightColor, const float& otherLightIntensity)
 	{

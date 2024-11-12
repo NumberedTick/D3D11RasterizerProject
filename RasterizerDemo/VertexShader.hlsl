@@ -33,12 +33,12 @@ VertexOutput main(VertexInput input)
     output.position = vertexPosition;
 
     // Tranmsform vertex to worldPos only
-    float3 vertexWorldPos = mul(float4(input.position, 0.0f), world).xyz;
+    float3 vertexWorldPos = mul(float4(input.position, 1.0f), world).xyz;
     output.worldPos = vertexWorldPos;
     
     // Transform vertex normal
-    float3 vertexNormal = mul(input.normal, (float3x3)world);
-    output.normal = normalize(mul(vertexNormal, (float3x3)viewProjection));
+    float3 vertexNormal = mul(float4(input.normal, 0.0f), world).xyz;
+    output.normal = vertexNormal;
 
     // Pass UV coordinates
     output.uvcoords = input.uvcoords;

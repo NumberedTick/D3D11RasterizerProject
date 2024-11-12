@@ -10,9 +10,9 @@ Texture2D<float4> specularGBuffer: register(t5);
 
 cbuffer LightBuffer : register(b0)
 {
+    float lightIntensity;
     float3 lightPosition;
     float4 lightColor;
-    float lightIntensity;
 };
 
 cbuffer cameraPosition : register(b1)

@@ -3,6 +3,7 @@ struct PixelShaderInput
     float4 position : SV_POSITION;
     float3 worldPos : WORLDS_POS;
     float3 normal : NORMAL;
+    float2 uvcoords : UVCOORDS;
 };
 
 
@@ -45,13 +46,14 @@ PixelShaderOutput main(PixelShaderInput input)
     PixelShaderOutput output;
 	
     float3 normal = normalize(input.normal);
-    float3 incomingView = normalize(input.worldPos - cameraPos);
+    float3 incomingView = normalize(input.worldPos.xyz-cameraPos);
     float3 reflectedView = reflect(incomingView, normal);
     float4 sampledValue = reflectionTexture.Sample(standardSampler, reflectedView);
     
-    output.colour = sampledValue;
-    //output.colour = float4(ambientRGBA.xyz, 1);
+    //output.colour = sampledValue;
+    //output.colour = reflectionTexture.Sample(standardSampler, float3(input.uvcoords, 5));
     output.normal = float4(input.normal, 0);
+    output.colour = float4(1, 0, 0, 1);
     output.position = float4(input.worldPos, 0);
     output.ambient = float4(ambientRGBA.xyz, 1);
     output.diffuse = diffuseRGBA;

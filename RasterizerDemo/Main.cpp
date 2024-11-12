@@ -321,7 +321,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// TEMP VALAUES USED UNTIL I SWITCH MAIN CAMERA TO A CAMERA OBJECT
 
-	XMMATRIX baselineWorldMatrix = CreateWorldMatrix(XM_PIDIV4, 0.0f, 0.0f, -0.5f);
+	XMMATRIX baselineWorldMatrix = CreateWorldMatrix(XM_PIDIV2, 0.0f, 0.0f, -0.5f);
 	XMStoreFloat4x4(&float4x4Array[1], baselineWorldMatrix);
 
 	XMMATRIX newWorldMatrix = CreateWorldMatrix(XM_PIDIV2, -xDist, 0.0f, -0.5f);

@@ -289,7 +289,7 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	std::array<float, 4> specularColor = { objLoader.LoadedMaterials[0].Ks.X,objLoader.LoadedMaterials[0].Ks.Y,objLoader.LoadedMaterials[0].Ks.Z,1.0f };
 
 	// Material Coeficients
-	float ambientIntensity = 0.0f;
+	float ambientIntensity = 0.2f;
 	float padding = 0.0f;
 	float specularPower = objLoader.LoadedMaterials[0].Ns;
 
@@ -476,7 +476,7 @@ bool CreateSampler(ID3D11Device* device, ID3D11SamplerState*& samplerState)
 bool CreateLightBuffer(ID3D11Device* device, ID3D11Buffer*& constantLightBuffer)
 {
 	// Deffining the pramiters for the light in view space
-	std::array<float, 3> lightPosition = { 1.0f, 0.0f, -3.5f };
+	std::array<float, 3> lightPosition = { 0.0f, 0.0f, 3.5f };
 	std::array<float, 4> lightColor = { 1.0f, 1.0f, 1.0f, 1.0f};
 	float lightIntencity = 1.0f;
 
