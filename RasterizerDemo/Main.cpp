@@ -11,6 +11,7 @@
 #include "IndexBufferD3D11.h"
 #include "VertexBufferD3D11.h"
 #include "CameraD3D11.h"
+#include "MeshD3D11.h"
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
@@ -144,7 +145,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11UnorderedAccessView* uav;
 	ID3D11UnorderedAccessView* uavTextureCube;
 
-
+	CameraD3D11* mainCamera = new CameraD3D11;
 
 	// creation of the needed things for the cubemap
 	ID3D11Texture2D* cubeMapTexture;
@@ -163,7 +164,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11DepthStencilView* cubeMapDSView;
 	ID3D11DepthStencilState* cubeMapDSState;
 	
-
+	//MeshData testMesh;
 
 	// Loads Models into the scene
 	std::vector<std::string> modelNames;

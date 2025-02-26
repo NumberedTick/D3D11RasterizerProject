@@ -289,7 +289,7 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	std::array<float, 4> specularColor = { objLoader.LoadedMaterials[0].Ks.X,objLoader.LoadedMaterials[0].Ks.Y,objLoader.LoadedMaterials[0].Ks.Z,1.0f };
 
 	// Material Coeficients
-	float ambientIntensity = 0.2f;
+	float ambientIntensity = 0.3f;
 	float padding = 0.0f;
 	float specularPower = objLoader.LoadedMaterials[0].Ns;
 

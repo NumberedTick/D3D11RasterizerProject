@@ -199,6 +199,7 @@
     <ClInclude Include="CameraD3D11.h" />
     <ClInclude Include="ConstantBufferD3D11.h" />
     <ClInclude Include="D3D11Helper.h" />
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="IndexBufferD3D11.h" />
     <ClInclude Include="InputLayoutD3D11.h" />
     <ClInclude Include="MeshD3D11.h" />

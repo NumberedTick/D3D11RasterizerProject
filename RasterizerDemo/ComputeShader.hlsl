@@ -56,7 +56,8 @@ void main( uint3 DTid:SV_DispatchThreadID)
     float4 specularFinal = lightColor * specularRGBA * specularIntensity;
     
     // Combine lightning parts
-    float4 finalColor = colour * ambientFinal+colour*diffuseFinal+colour*specularFinal;
+    float4 finalColor = colour * ambientFinal + colour * diffuseFinal + colour * specularFinal;
+    
    
     backBufferUAV[DTid.xy] = finalColor;
 
