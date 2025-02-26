@@ -534,8 +534,8 @@ bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cam
 	ID3D11DepthStencilView*& dsView, ID3D11DepthStencilState*& dsState, ID3D11UnorderedAccessView*& uavTextureCube)
 {
 
-	UINT cubeWidth = 1024;
-	UINT cubeHeight = 1024;
+	UINT cubeWidth = 256;
+	UINT cubeHeight = 256;
 
 	ProjectionInfo projectionInfo;
 	projectionInfo.fovAngleY = XM_PIDIV2;
@@ -608,8 +608,8 @@ bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cam
 // Function To create the resouces that are needed for each texture cube
 bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray, ID3D11ShaderResourceView*& cubeMapSRV)
 {
-	UINT cubeWidth = 1024;
-	UINT cubeHeight = 1024;
+	UINT cubeWidth = 256;
+	UINT cubeHeight = 256;
 
 	//bool hasSRV = false;
 	D3D11_TEXTURE2D_DESC desc; 

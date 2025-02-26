@@ -47,7 +47,7 @@ PixelShaderOutput main(PixelShaderInput input)
 	
     float3 normal = normalize(input.normal);
     float3 incomingView = normalize(input.worldPos.xyz-cameraPos);
-    float3 reflectedView = -reflect(incomingView, normal); // not a problem
+    float3 reflectedView = normalize(-reflect(incomingView, normal)); // not a problem
     float4 sampledValue = reflectionTexture.Sample(standardSampler, reflectedView); // problem seams to be here
     
     output.colour = sampledValue;

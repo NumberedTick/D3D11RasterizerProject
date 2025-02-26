@@ -181,9 +181,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Loads textures
 
 	std::vector<std::string> textureNames;
+	textureNames.push_back("torus.png");
 	textureNames.push_back("texture2.png");
 	textureNames.push_back("texture.jpg");
-	textureNames.push_back("torus.png");
+
 
 	Material** materialArray = new Material * [nrModels]; // MEMORY LEAK
 
@@ -241,7 +242,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (DynamicCubeMapsEnabled)
 		{
 
-			if (!CreateGBuffer(device, gTextureBuffer[i], gBufferTextureRtv[i], gBufferCubeMapSRV[i], 1024, 1024))
+			if (!CreateGBuffer(device, gTextureBuffer[i], gBufferTextureRtv[i], gBufferCubeMapSRV[i], 256, 256))
 			{
 				std::cerr << "Error creating G-Buffer for Texture Cube!" << std::endl;
 				return false;
