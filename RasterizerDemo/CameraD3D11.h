@@ -21,7 +21,9 @@ private:
 	DirectX::XMFLOAT3 right = { 1.0f, 0.0f, 0.0f };
 	DirectX::XMFLOAT3 up = { 0.0f, 1.0f, 0.0f };
 	ProjectionInfo projInfo;
+	DirectX::XMFLOAT4X4 viewProjmatrix;
 
+	// create buffer for viewProjectionMatruxBuffer
 	ConstantBufferD3D11 cameraBuffer;
 
 	void MoveInDirection(float amount, const DirectX::XMFLOAT3& direction);
@@ -49,6 +51,9 @@ public:
 	void RotateUp(float amount);
 
 	const DirectX::XMFLOAT3& GetPosition() const;
+
+	void setposition(DirectX::XMFLOAT3 pos); // temp function to set position for debugging
+
 	const DirectX::XMFLOAT3& GetForward() const;
 	const DirectX::XMFLOAT3& GetRight() const;
 	const DirectX::XMFLOAT3& GetUp() const;
@@ -56,5 +61,9 @@ public:
 	void UpdateInternalConstantBuffer(ID3D11DeviceContext* context);
 	ID3D11Buffer* GetConstantBuffer() const;
 
+	// update the viewProjectionMatrixBuffer
+	// get the viewProjectionMatrixBuffer
+
+	DirectX::XMFLOAT4X4 SetViewProjectionMatrix() const;
 	DirectX::XMFLOAT4X4 GetViewProjectionMatrix() const;
 };

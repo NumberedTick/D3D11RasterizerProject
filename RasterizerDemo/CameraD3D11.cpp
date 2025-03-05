@@ -5,8 +5,8 @@
 
 CameraD3D11::CameraD3D11(ID3D11Device* device, const ProjectionInfo& projectionInfo, const XMFLOAT3& initialPosition)
 {
-	this->position = initialPosition;
-	this->projInfo = projectionInfo;
+	//this->position = initialPosition;
+	//this->projInfo = projectionInfo;
 
 	Initialize(device, projectionInfo, initialPosition);
 }
@@ -17,10 +17,12 @@ void CameraD3D11::Initialize(ID3D11Device* device, const ProjectionInfo& project
 	this->position = initialPosition;
 	this->projInfo = projectionInfo;
 	
-	XMFLOAT4X4 cameraViewProjMatrix = this->GetViewProjectionMatrix();
+	//this->SetViewProjectionMatrix();
+
+	XMFLOAT4X4 cameraViewProjMatrix = this->SetViewProjectionMatrix();
 	
 
-	this->cameraBuffer = ConstantBufferD3D11(device, sizeof(cameraViewProjMatrix), &cameraViewProjMatrix);
+	this->cameraBuffer = ConstantBufferD3D11(device, sizeof(XMFLOAT4X4), &cameraViewProjMatrix);
 }
 
 void CameraD3D11::MoveForward(float amount)
@@ -95,6 +97,11 @@ const XMFLOAT3& CameraD3D11::GetPosition() const
 	return this->position;
 }
 
+void CameraD3D11::setposition(XMFLOAT3 pos)
+{
+	this->position = pos;
+}
+
 const XMFLOAT3& CameraD3D11::GetForward() const
 {
 	return this->forward;
@@ -112,7 +119,7 @@ const XMFLOAT3& CameraD3D11::GetUp() const
 
 void CameraD3D11::UpdateInternalConstantBuffer(ID3D11DeviceContext* context)
 {
-	XMFLOAT4X4 data = this->GetViewProjectionMatrix();
+	XMFLOAT4X4 data = this->SetViewProjectionMatrix();
 	this->cameraBuffer.UpdateBuffer(context, &data);
 }
 
@@ -121,7 +128,7 @@ ID3D11Buffer* CameraD3D11::GetConstantBuffer() const
 	return this->cameraBuffer.GetBuffer();
 }
 
-XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
+XMFLOAT4X4 CameraD3D11::SetViewProjectionMatrix() const
 {
 	XMVECTOR viewVector = XMLoadFloat3(&this->GetForward());
 	XMVECTOR upDirection = XMLoadFloat3(&this->GetUp());
@@ -133,10 +140,17 @@ XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
 
 	XMMATRIX cameraViewProjectionMatrix = CreatViewPerspectiveMatrix(viewVector, upDirection, eyePosition, fovAngleY, aspectRatio, nearZ, farZ);
 
-	XMFLOAT4X4 returnFloat4X4;
+	XMFLOAT4X4 storedFloat4X4;
 
-	XMStoreFloat4x4(&returnFloat4X4, cameraViewProjectionMatrix);
+	XMStoreFloat4x4(&storedFloat4X4, cameraViewProjectionMatrix);
+
+	// returning the viewProjectionMatrix was needed more then expected
+	return storedFloat4X4; 
+
+}
 
 
-	return returnFloat4X4;
+XMFLOAT4X4 CameraD3D11::GetViewProjectionMatrix() const
+{
+	return this->viewProjmatrix;
 }

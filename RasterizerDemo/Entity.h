@@ -8,7 +8,10 @@
 class Entity
 {
 private:
-	MeshD3D11 mesh;
+	// Save IDs instead of lage data
+	// use Maps
+	// create meshID 
+	// MeshD3D11 mesh;
 	std::string modelName;
 	std::string textureName;
 	ShaderResourceTextureD3D11 textureSRV;

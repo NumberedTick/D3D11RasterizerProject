@@ -233,18 +233,23 @@ bool CreateWorldMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantWorldM
 	return !FAILED(hr);
 }
 
-bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantViewProjMatrixBuffer)
+bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantViewProjMatrixBuffer, CameraD3D11*& mainCamera)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
 	XMVECTOR eyePosition = { 0.0f, 0.0f, -3.5f };
+	XMFLOAT3 eyePositionFloat3;
+	XMStoreFloat3(&eyePositionFloat3, eyePosition);
+
 	XMVECTOR viewVecotr = { 0.0f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
 	float fovAgnleY = XM_PI / 2.5f;
 	float aspectRatio = 1024.0f / 576.0f;
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
+	ProjectionInfo mainCameraProjection = { fovAgnleY, aspectRatio, nearZ, farZ };
 	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(viewVecotr, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
-
+	mainCamera->Initialize(device, mainCameraProjection, eyePositionFloat3);
+	/*
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array;
 	XMStoreFloat4x4(&float4x4Array, viewAndPerspectiveMatrix);
@@ -265,7 +270,9 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 
 	HRESULT hr = device->CreateBuffer(&constantBufferDesc, &constantData, &constantViewProjMatrixBuffer);
 
-	return !FAILED(hr);
+	//return !FAILED(hr);
+	*/
+	return true;
 }
 
 // Function for Creating a constant buffer for a material to be sent to the Pixel shader
@@ -510,7 +517,7 @@ bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffe
 {
 	// Creation of an array that can be uploaded to the Pixel Shader in view space
 	std::array<float, 4> cameraPosition = { 0.0f, 0.0f, -3.5f };
-
+	
 	D3D11_BUFFER_DESC constantCameraBufferDesc;
 	constantCameraBufferDesc.ByteWidth = sizeof(cameraPosition);
 	constantCameraBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -684,7 +691,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, 
-	ID3D11UnorderedAccessView*& uavTextureCube)
+	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11*& mainCamera)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap,cShader,vShaderByteCode))
@@ -706,7 +713,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 
 	}
 
-	if (!CreateViewProjMatrixBuffer(device, constantViewProjMatrixBuffer))
+	if (!CreateViewProjMatrixBuffer(device, constantViewProjMatrixBuffer, mainCamera))
 	{
 		std::cerr << "Error creating constant buffer for View and Projection Matrix in Vertex shader!" << std::endl;
 		return false;
