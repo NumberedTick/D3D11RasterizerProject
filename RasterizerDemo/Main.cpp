@@ -428,7 +428,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
-					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
+					vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 			}
 			
