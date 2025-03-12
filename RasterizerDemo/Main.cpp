@@ -31,6 +31,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->OMSetDepthStencilState(dsState, 0);
 	immediateContext->VSSetShader(vShader, nullptr, 0);	
 	immediateContext->VSSetConstantBuffers(0, 1, &tempConstantBuffer);
+	immediateContext->VSSetConstantBuffers(1, 1, &viewProjBuffers);
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
 	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
@@ -144,7 +145,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11UnorderedAccessView* uav;
 	ID3D11UnorderedAccessView* uavTextureCube;
 
-	CameraD3D11* mainCamera = new CameraD3D11;
+	CameraD3D11 mainCamera;
 
 	// creation of the needed things for the cubemap
 	ID3D11Texture2D* cubeMapTexture;
@@ -328,8 +329,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMMATRIX newWorldMatrix = CreateWorldMatrix(XM_PIDIV2, -xDist, 0.0f, -0.5f);
 	XMStoreFloat4x4(&float4x4Array[2], newWorldMatrix);
 
-	XMVECTOR eyePosition = { 0.0f, 100.0f, -1.5f };
-	XMVECTOR viewVecotr = { 0.0f, 0.0f, 1.0f };
+	XMVECTOR eyePosition = { 1.0f, 0.0f, -1.5f };
+	XMVECTOR viewVecotr = { 1.0f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
 	float fovAgnleY = XM_PI / 2.5f;
 	float aspectRatio = 1024.0f / 576.0f;
@@ -357,8 +358,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* currentBuffer;
 	XMFLOAT3 eyePositionFloat3;
 	XMStoreFloat3(&eyePositionFloat3, eyePosition);
-	mainCamera->setposition(eyePositionFloat3);
-	mainCamera->GetPosition();
+	//mainCamera.Setposition(eyePositionFloat3);
+	//mainCamera.UpdateInternalConstantBuffer(immediateContext);
+	//mainCamera.GetPosition();
 
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
@@ -380,9 +382,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		memcpy(mappedResource.pData, &float4x4Array, sizeof(XMFLOAT4X4));
 		immediateContext->Unmap(constantWorldMatrixBuffer, 0);
 
-		mainCamera->RotateUp(rotationAmount);
+		mainCamera.RotateUp(XM_PIDIV2);
 
-		mainCamera->UpdateInternalConstantBuffer(immediateContext);
+		mainCamera.UpdateInternalConstantBuffer(immediateContext);
 
 		// Rendering part
 
@@ -402,7 +404,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
-		currentBuffer = mainCamera->GetConstantBuffer();
+		currentBuffer = mainCamera.GetConstantBuffer();
 
 		// Gemoetry pass
 		for (int i = 0; i < nrModels; ++i)
@@ -423,10 +425,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			else
 			{
 				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
-				immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
+				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
-					vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer,
+					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 			}
 			

@@ -233,14 +233,14 @@ bool CreateWorldMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantWorldM
 	return !FAILED(hr);
 }
 
-bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantViewProjMatrixBuffer, CameraD3D11*& mainCamera)
+bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantViewProjMatrixBuffer, CameraD3D11& mainCamera)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
-	XMVECTOR eyePosition = { 0.0f, 0.0f, -3.5f };
+	XMVECTOR eyePosition = { 1.0f, 0.0f, -3.5f };
 	XMFLOAT3 eyePositionFloat3;
 	XMStoreFloat3(&eyePositionFloat3, eyePosition);
 
-	XMVECTOR viewVecotr = { 0.0f, 0.0f, 1.0f };
+	XMVECTOR viewVecotr = { -0.6f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
 	float fovAgnleY = XM_PI / 2.5f;
 	float aspectRatio = 1024.0f / 576.0f;
@@ -248,8 +248,8 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 	float farZ = 1000.0f;
 	ProjectionInfo mainCameraProjection = { fovAgnleY, aspectRatio, nearZ, farZ };
 	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(viewVecotr, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
-	mainCamera->Initialize(device, mainCameraProjection, eyePositionFloat3);
-	/*
+	mainCamera.Initialize(device, mainCameraProjection, eyePositionFloat3);
+	//mainCamera->RotateUp(XM_PIDIV2);
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array;
 	XMStoreFloat4x4(&float4x4Array, viewAndPerspectiveMatrix);
@@ -270,9 +270,9 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 
 	HRESULT hr = device->CreateBuffer(&constantBufferDesc, &constantData, &constantViewProjMatrixBuffer);
 
-	//return !FAILED(hr);
-	*/
-	return true;
+	return !FAILED(hr);
+	
+	//return true;
 }
 
 // Function for Creating a constant buffer for a material to be sent to the Pixel shader
@@ -483,9 +483,9 @@ bool CreateSampler(ID3D11Device* device, ID3D11SamplerState*& samplerState)
 bool CreateLightBuffer(ID3D11Device* device, ID3D11Buffer*& constantLightBuffer)
 {
 	// Deffining the pramiters for the light in view space
-	std::array<float, 3> lightPosition = { 0.0f, 0.0f, 3.5f };
+	std::array<float, 3> lightPosition = { 3.0f, 0.0f, 3.5f };
 	std::array<float, 4> lightColor = { 1.0f, 1.0f, 1.0f, 1.0f};
-	float lightIntencity = 1.0f;
+	float lightIntencity = 4.0f;
 
 	// Creation of a point light
 	PointLight pointLight = { lightPosition,  lightColor, lightIntencity};
@@ -516,7 +516,7 @@ bool CreateLightBuffer(ID3D11Device* device, ID3D11Buffer*& constantLightBuffer)
 bool CreateCameraBuffer(ID3D11Device* device, ID3D11Buffer*& constantCameraBuffer)
 {
 	// Creation of an array that can be uploaded to the Pixel Shader in view space
-	std::array<float, 4> cameraPosition = { 0.0f, 0.0f, -3.5f };
+	std::array<float, 4> cameraPosition = { 1.0f, 0.0f, -3.5f };
 	
 	D3D11_BUFFER_DESC constantCameraBufferDesc;
 	constantCameraBufferDesc.ByteWidth = sizeof(cameraPosition);
@@ -691,7 +691,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, 
-	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11*& mainCamera)
+	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap,cShader,vShaderByteCode))

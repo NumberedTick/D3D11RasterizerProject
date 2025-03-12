@@ -52,7 +52,7 @@ public:
 
 	const DirectX::XMFLOAT3& GetPosition() const;
 
-	void setposition(DirectX::XMFLOAT3 pos); // temp function to set position for debugging
+	void Setposition(DirectX::XMFLOAT3 pos); // temp function to set position for debugging
 
 	const DirectX::XMFLOAT3& GetForward() const;
 	const DirectX::XMFLOAT3& GetRight() const;
@@ -64,6 +64,6 @@ public:
 	// update the viewProjectionMatrixBuffer
 	// get the viewProjectionMatrixBuffer
 
-	DirectX::XMFLOAT4X4 SetViewProjectionMatrix() const;
+	DirectX::XMFLOAT4X4 SetViewProjectionMatrix();
 	DirectX::XMFLOAT4X4 GetViewProjectionMatrix() const;
 };
