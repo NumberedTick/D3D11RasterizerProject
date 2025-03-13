@@ -47,8 +47,8 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 	ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
-	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,D3D11_MAPPED_SUBRESOURCE mappedResource,
-	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers)
+	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, 
+	ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers)
 {
 	
 	ID3D11RenderTargetView* nullRTV = nullptr;
@@ -265,7 +265,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	
+
 	// Creation of the needed textures for each model
 	ID3D11Texture2D** modelTextures = new ID3D11Texture2D* [nrModels];
 	ID3D11ShaderResourceView** srvModelTextures = new ID3D11ShaderResourceView* [nrModels];
@@ -329,8 +329,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMMATRIX newWorldMatrix = CreateWorldMatrix(XM_PIDIV2, -xDist, 0.0f, -0.5f);
 	XMStoreFloat4x4(&float4x4Array[2], newWorldMatrix);
 
-	XMVECTOR eyePosition = { 1.0f, 0.0f, -1.5f };
-	XMVECTOR viewVecotr = { 1.0f, 0.0f, 1.0f };
+	XMVECTOR eyePosition = { 1.0f, 0.0f, -3.5f };
+	XMVECTOR viewVecotr = { -0.6f, 0.0f, 1.0f };
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
 	float fovAgnleY = XM_PI / 2.5f;
 	float aspectRatio = 1024.0f / 576.0f;
@@ -358,10 +358,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* currentBuffer;
 	XMFLOAT3 eyePositionFloat3;
 	XMStoreFloat3(&eyePositionFloat3, eyePosition);
-	//mainCamera.Setposition(eyePositionFloat3);
-	//mainCamera.UpdateInternalConstantBuffer(immediateContext);
-	//mainCamera.GetPosition();
 
+
+
+	ID3D11Buffer* bufferArray2[3] = { constantLightBuffer, constantCameraBuffer };
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
@@ -382,7 +382,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		memcpy(mappedResource.pData, &float4x4Array, sizeof(XMFLOAT4X4));
 		immediateContext->Unmap(constantWorldMatrixBuffer, 0);
 
-		mainCamera.RotateUp(XM_PIDIV2);
+
 
 		mainCamera.UpdateInternalConstantBuffer(immediateContext);
 
@@ -394,7 +394,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[0]);
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState, 
 				cubeMapViewport, vShader, pShader, cShader, cubeMapUavArray ,inputLayout, vBuffer[0], iBuffer[0], 
-				cubeMapCameras, &tempBuffer[0], mappedResource, materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
+				cubeMapCameras, &tempBuffer[0],  materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
 		}
 
 		// Cleararing from last frame of main rendering
@@ -405,6 +405,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 		currentBuffer = mainCamera.GetConstantBuffer();
+
+		bufferArray2[2] = currentBuffer;
 
 		// Gemoetry pass
 		for (int i = 0; i < nrModels; ++i)
@@ -417,7 +419,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				immediateContext->PSSetConstantBuffers(1, 1, &constantCameraBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShaderCubeMap, cShader, inputLayout,
-					vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer,
+					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 				immediateContext->PSSetConstantBuffers(1, 0, nullptr);
 					
@@ -428,7 +430,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
-					vBuffer[i], iBuffer[i], *tempBufferArray[i], constantViewProjMatrixBuffer,
+					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 			}
 			
@@ -441,6 +443,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->CSSetShader(cShader, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 		immediateContext->CSSetShaderResources(0, nrOfGBuffers, srvArr);
+		immediateContext->CSSetConstantBuffers(0, 3, bufferArray2);
 		immediateContext->Dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
 
@@ -475,7 +478,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time'
 
-
+		mainCamera.MoveUp(-deltaTime);
 		rotationAmount += (deltaTime)*XM_2PI;
 		//xDist += (deltaTime) * 0.5f;
 	}

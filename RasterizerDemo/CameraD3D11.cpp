@@ -12,10 +12,16 @@ CameraD3D11::CameraD3D11(ID3D11Device* device, const ProjectionInfo& projectionI
 }
 
 
-void CameraD3D11::Initialize(ID3D11Device* device, const ProjectionInfo& projectionInfo, const XMFLOAT3& initialPosition)
+void CameraD3D11::Initialize(ID3D11Device* device, const ProjectionInfo& projectionInfo, const XMFLOAT3& initialPosition, 
+	const XMFLOAT3& forwardVector, const XMFLOAT3& upVector)
 {
 	this->position = initialPosition;
 	this->projInfo = projectionInfo;
+	this->forward = forwardVector;
+	this->up = upVector;
+	XMFLOAT3 tempRight;
+	XMStoreFloat3(&tempRight, XMVector3Cross(XMLoadFloat3(&this->up), XMLoadFloat3(&this->forward)));
+	this->right = tempRight;
 	
 	//this->SetViewProjectionMatrix();
 
@@ -43,16 +49,11 @@ void CameraD3D11::MoveUp(float amount)
 void CameraD3D11::MoveInDirection(float amount, const XMFLOAT3& direction)
 {
 	XMVECTOR directionVector = XMLoadFloat3(&direction);
-	XMVECTOR tempForward = XMLoadFloat3(&this->GetForward());
-	XMVECTOR tempRight = XMLoadFloat3(&this->GetRight());
-	XMVECTOR tempUp = XMLoadFloat3(&this->GetUp());
 	XMVECTOR positionVector = XMLoadFloat3(&this->GetPosition());
 	
-	XMVECTOR scaledVector = XMVectorScale(tempForward, amount);
-	scaledVector = XMVectorScale(tempRight, amount);
-	scaledVector = XMVectorScale(tempUp, amount);
+	XMVECTOR newPosition = positionVector + directionVector * amount;
 
-	XMStoreFloat3(&this->position, XMVectorAdd(positionVector, scaledVector));
+	XMStoreFloat3(&this->position, newPosition);
 }
 
 void CameraD3D11::RotateAroundAxis(float amount, const XMFLOAT3& axis)
@@ -97,6 +98,21 @@ void CameraD3D11::Setposition(XMFLOAT3 pos)
 {
 	this->position = pos;
 	this->viewProjmatrix = this->SetViewProjectionMatrix();
+}
+
+void CameraD3D11::SetForward(XMFLOAT3 forward)
+{
+	this->forward = forward;
+}
+
+void CameraD3D11::SetRight(XMFLOAT3 right)
+{
+	this->right = right;
+}
+
+void CameraD3D11::SetUp(XMFLOAT3 up)
+{
+	this->up = up;
 }
 
 const XMFLOAT3& CameraD3D11::GetForward() const

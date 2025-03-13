@@ -20,6 +20,11 @@ cbuffer cameraPosition : register(b1)
     float3 cameraPosition;
 };
 
+cbuffer ConstantBuffer2 : register(b2)
+{
+    row_major float4x4 viewProjection;
+};
+
 [numthreads(8, 8, 1)]
 void main( uint3 DTid:SV_DispatchThreadID)
 {
@@ -58,6 +63,8 @@ void main( uint3 DTid:SV_DispatchThreadID)
     // Combine lightning parts
     float4 finalColor = colour * ambientFinal + colour * diffuseFinal + colour * specularFinal;
     
+    float4 debugColor = float4(viewProjection[0].xyz, 1);
+    //float4 debugColor2 = float4(0, 0, -1, 1);
    
     backBufferUAV[DTid.xy] = finalColor;
 

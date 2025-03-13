@@ -240,15 +240,21 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 	XMFLOAT3 eyePositionFloat3;
 	XMStoreFloat3(&eyePositionFloat3, eyePosition);
 
-	XMVECTOR viewVecotr = { -0.6f, 0.0f, 1.0f };
+	XMVECTOR viewVecotr = { 0.0f, 0.0f, 1.0f };
+	XMFLOAT3 viewVectorFloat3;
+	XMStoreFloat3(&viewVectorFloat3, viewVecotr);
+
 	XMVECTOR upDirection = { 0.0f, 1.0f, 0.0f };
+	XMFLOAT3 upDirectionFloat3;
+	XMStoreFloat3(&upDirectionFloat3, upDirection);
+
 	float fovAgnleY = XM_PI / 2.5f;
 	float aspectRatio = 1024.0f / 576.0f;
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
 	ProjectionInfo mainCameraProjection = { fovAgnleY, aspectRatio, nearZ, farZ };
 	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(viewVecotr, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
-	mainCamera.Initialize(device, mainCameraProjection, eyePositionFloat3);
+	mainCamera.Initialize(device, mainCameraProjection, eyePositionFloat3, viewVectorFloat3, upDirectionFloat3);
 	//mainCamera->RotateUp(XM_PIDIV2);
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array;

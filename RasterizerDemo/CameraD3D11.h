@@ -40,7 +40,9 @@ public:
 	CameraD3D11& operator=(CameraD3D11&& other) = default;
 
 	void Initialize(ID3D11Device* device, const ProjectionInfo& projectionInfo,
-		const DirectX::XMFLOAT3& initialPosition = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
+		const DirectX::XMFLOAT3& initialPosition = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		const DirectX::XMFLOAT3& forwardVector = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
+		const DirectX::XMFLOAT3& upVector = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
 
 	void MoveForward(float amount);
 	void MoveRight(float amount);
@@ -53,6 +55,10 @@ public:
 	const DirectX::XMFLOAT3& GetPosition() const;
 
 	void Setposition(DirectX::XMFLOAT3 pos); // temp function to set position for debugging
+
+	void SetForward(DirectX::XMFLOAT3 forward);
+	void SetRight(DirectX::XMFLOAT3 right);
+	void SetUp(DirectX::XMFLOAT3 up);
 
 	const DirectX::XMFLOAT3& GetForward() const;
 	const DirectX::XMFLOAT3& GetRight() const;
