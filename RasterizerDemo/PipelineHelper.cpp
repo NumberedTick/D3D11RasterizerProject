@@ -17,7 +17,7 @@
 
 using namespace DirectX;
 
-bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader ,std::string& vShaderByteCode)
+bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader , ID3D11ComputeShader*& cShaderCubeMap,std::string& vShaderByteCode)
 {
 	std::string shaderData;
 	std::ifstream reader;
@@ -108,6 +108,30 @@ bool LoadShaders(ID3D11Device* device, ID3D11VertexShader*& vShader, ID3D11Pixel
 	if (FAILED(device->CreateComputeShader(shaderData.c_str(), shaderData.length(), nullptr, &cShader)))
 	{
 		std::cerr << "Failed to create compute shader!" << std::endl;
+		return false;
+	}
+
+	shaderData.clear();
+	reader.close();
+
+
+	reader.open("CubeMapComputeShader.cso", std::ios::binary | std::ios::ate);
+	if (!reader.is_open())
+	{
+		std::cerr << "Could not open Cube Map CS file!" << std::endl;
+		return false;
+	}
+
+	reader.seekg(0, std::ios::end);
+	shaderData.reserve(static_cast<unsigned int>(reader.tellg()));
+	reader.seekg(0, std::ios::beg);
+
+	shaderData.assign((std::istreambuf_iterator<char>(reader)),
+		std::istreambuf_iterator<char>());
+
+	if (FAILED(device->CreateComputeShader(shaderData.c_str(), shaderData.length(), nullptr, &cShaderCubeMap)))
+	{
+		std::cerr << "Failed to create Cube Map compute shader!" << std::endl;
 		return false;
 	}
 
@@ -233,7 +257,7 @@ bool CreateWorldMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantWorldM
 	return !FAILED(hr);
 }
 
-bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantViewProjMatrixBuffer, CameraD3D11& mainCamera)
+bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantViewProjMatrixBuffer, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer)
 {
 	// Creation of the world matrix and the Veiw + perspecive matrix
 	XMVECTOR eyePosition = { 1.0f, 0.0f, -3.5f };
@@ -255,6 +279,8 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 	ProjectionInfo mainCameraProjection = { fovAgnleY, aspectRatio, nearZ, farZ };
 	XMMATRIX viewAndPerspectiveMatrix = CreatViewPerspectiveMatrix(viewVecotr, upDirection, eyePosition,fovAgnleY, aspectRatio, nearZ,farZ);
 	mainCamera.Initialize(device, mainCameraProjection, eyePositionFloat3, viewVectorFloat3, upDirectionFloat3);
+	XMFLOAT3 position = mainCamera.GetPosition();
+	cameraPositionBuffer.Initialize(device, sizeof(XMFLOAT3)+4, &position);
 	//mainCamera->RotateUp(XM_PIDIV2);
 	// Adding the two matrixes into one array
 	XMFLOAT4X4 float4x4Array;
@@ -588,7 +614,7 @@ bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cam
 	desc.Width = cubeWidth;
 	desc.Height = cubeHeight;
 	desc.MipLevels = 1;
-	desc.ArraySize = 1;
+	desc.ArraySize = 6;
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
@@ -635,7 +661,7 @@ bool CreateTextureCube(ID3D11Device* device, ID3D11Texture2D*& cubeMapTexture, I
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
@@ -692,15 +718,15 @@ enum TEXTURE_CUBE_FACE_INDEX
 
 
 bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
-	ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
+	ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader , ID3D11ComputeShader*& cShaderCubeMap ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, 
-	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera)
+	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer)
 {
 	std::string vShaderByteCode;
-	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap,cShader,vShaderByteCode))
+	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, vShaderByteCode))
 	{
 		std::cerr << "Error loading shaders!" << std::endl;
 		return false;
@@ -719,7 +745,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 
 	}
 
-	if (!CreateViewProjMatrixBuffer(device, constantViewProjMatrixBuffer, mainCamera))
+	if (!CreateViewProjMatrixBuffer(device, constantViewProjMatrixBuffer, mainCamera, cameraPositionBuffer))
 	{
 		std::cerr << "Error creating constant buffer for View and Projection Matrix in Vertex shader!" << std::endl;
 		return false;
@@ -777,7 +803,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
 
 
-	ID3D11Buffer* bufferArray[2] = {constantLightBuffer, constantCameraBuffer};
+	ID3D11Buffer* bufferArray[2] = {constantLightBuffer, cameraPositionBuffer.GetBuffer()};
 	deviceContext->CSSetConstantBuffers(0, 2, bufferArray);
 
 

@@ -80,6 +80,9 @@
     <FxCompile Include="CubeMapPixelShader.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
+    <FxCompile Include="CubeMapComputeShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WindowHelper.h">

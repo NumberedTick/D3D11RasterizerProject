@@ -46,7 +46,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 
 void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-	ID3D11PixelShader* pShader, ID3D11ComputeShader*& cShader, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
+	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
 	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, 
 	ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers)
 {
@@ -94,7 +94,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 
 		immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr);
 
-		immediateContext->CSSetShader(cShader, nullptr, 0);
+		immediateContext->CSSetShader(cShaderCubeMap, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &cubeMapUavArray[i], nullptr);
 		immediateContext->CSSetShaderResources(0, nrOfGBuffers, gBufferCubeMapSRV);
 		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);		
@@ -134,12 +134,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11PixelShader* pShader;
 	ID3D11PixelShader* pShaderCubeMap;
 	ID3D11ComputeShader* cShader;
+	ID3D11ComputeShader* cShaderCubeMap;
 	ID3D11InputLayout* inputLayout;
 	ID3D11Buffer* constantWorldMatrixBuffer;
 	ID3D11Buffer* constantViewProjMatrixBuffer;
 	ID3D11Buffer* constantLightBuffer;
 	ID3D11Buffer* constantMaterialBuffer;
 	ID3D11Buffer* constantCameraBuffer;
+	ConstantBufferD3D11 cameraPositionBuffer;
 
 	ID3D11SamplerState* samplerState;
 	ID3D11UnorderedAccessView* uav;
@@ -255,11 +257,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 
-	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, pShaderCubeMap, cShader, inputLayout, 
+	if (!SetupPipeline(device, vBuffer, iBuffer, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, inputLayout, 
 		constantWorldMatrixBuffer, constantViewProjMatrixBuffer, constantLightBuffer, constantMaterialBuffer,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
-		samplerState, modelNames, WIDTH, HEIGHT, materialArray, materialBufferArray, uavTextureCube, mainCamera))
+		samplerState, modelNames, WIDTH, HEIGHT, materialArray, materialBufferArray, uavTextureCube, mainCamera, cameraPositionBuffer))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -353,15 +355,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	tempBufferArray[2] = &tempBuffer2;
 	tempBufferArray[3] = &tempBuffer;
 
-	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer };
+	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer};
 
 	ID3D11Buffer* currentBuffer;
 	XMFLOAT3 eyePositionFloat3;
 	XMStoreFloat3(&eyePositionFloat3, eyePosition);
 
+	XMFLOAT3 position = mainCamera.GetPosition();
 
-
-	ID3D11Buffer* bufferArray2[3] = { constantLightBuffer, constantCameraBuffer };
+	ID3D11Buffer* bufferArray2[3] = { constantLightBuffer, cameraPositionBuffer.GetBuffer()};
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
@@ -393,7 +395,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[0]);
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState, 
-				cubeMapViewport, vShader, pShader, cShader, cubeMapUavArray ,inputLayout, vBuffer[0], iBuffer[0], 
+				cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray ,inputLayout, vBuffer[0], iBuffer[0],
 				cubeMapCameras, &tempBuffer[0],  materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
 		}
 
@@ -405,7 +407,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 		currentBuffer = mainCamera.GetConstantBuffer();
-
+		position = mainCamera.GetPosition();
+		cameraPositionBuffer.UpdateBuffer(immediateContext, &position);
+		bufferArray2[1] = cameraPositionBuffer.GetBuffer();
 		bufferArray2[2] = currentBuffer;
 
 		// Gemoetry pass
@@ -422,7 +426,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 				immediateContext->PSSetConstantBuffers(1, 0, nullptr);
-					
+
 			}
 			else
 			{
@@ -433,7 +437,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 			}
-			
+
 		}
 		// Unbinding GBuffer RTVs
 		ID3D11RenderTargetView* nullRTV[1] = { nullptr };
@@ -452,6 +456,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->CSSetShaderResources(0, 1, nullSRV);
 
 		swapChain->Present(0, 0);
+
+
 
 		// End time for chorno for the time to render a frame and the total time to render a frame
 		auto endTime = std::chrono::high_resolution_clock::now();
@@ -476,9 +482,57 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		*/
 
-		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time'
+		
+		//mainCamera.MoveForward(deltaTime);
+		//mainCamera.RotateUp(-deltaTime/2);
+		if (GetKeyState('S') & 0x8000)
+		{
+			mainCamera.MoveForward(-0.1);
+		}
+		if (GetKeyState('W') & 0x8000)
+		{
+			mainCamera.MoveForward(0.1);
+		}
+		if (GetKeyState('A') & 0x8000)
+		{
+			mainCamera.MoveRight(-0.05);
+		}
+		if (GetKeyState('D') & 0x8000)
+		{
+			mainCamera.MoveRight(0.05);
+		}
+		if (GetKeyState(VK_SHIFT) & 0x8000) 
+		{
+			mainCamera.MoveUp(-0.05);
+		}
+		if (GetKeyState(VK_SPACE) & 0x8000)
+		{
+			mainCamera.MoveUp(0.05);
+		}
+		if (GetKeyState(VK_UP) & 0x8000)
+		{
+			mainCamera.RotateRight(-XM_2PI / 720);
+		}
+		if (GetKeyState(VK_DOWN) & 0x8000)
+		{
+			mainCamera.RotateRight(XM_2PI / 720);
+		}
+		if (GetKeyState(VK_RIGHT) & 0x8000)
+		{
+			mainCamera.RotateUp(XM_2PI / 720);
+		}
+		if (GetKeyState(VK_LEFT) & 0x8000)
+		{
+			mainCamera.RotateUp(-XM_2PI / 720);
+		}
+		/*
+		immediateContext->Map(bufferArray2[1], 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
+		memcpy(mappedResource.pData, &float4x4Array, sizeof(XMFLOAT4X4));
+		immediateContext->Unmap(bufferArray2[1], 0);
+		*/
 
-		mainCamera.MoveUp(-deltaTime);
+
+		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time'
 		rotationAmount += (deltaTime)*XM_2PI;
 		//xDist += (deltaTime) * 0.5f;
 	}
