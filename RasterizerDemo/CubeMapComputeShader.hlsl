@@ -1,4 +1,4 @@
-RWTexture2D<unorm float4> backBufferUAV : register(u0);
+RWTexture2DArray<float4> backBufferUAV : register(u0);
 
 Texture2D<float4> positionGBuffer : register(t2);
 Texture2D<float4> colorGBuffer : register(t1);
@@ -28,6 +28,8 @@ cbuffer ConstantBuffer2 : register(b2)
 [numthreads(8, 8, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
+    uint sliceIndex = DTid.z;
+    
     float3 position = positionGBuffer[DTid.xy];
     float4 colour = colorGBuffer[DTid.xy];
     float3 normal = normalize(normalGBuffer[DTid.xy].xyz);
@@ -63,9 +65,9 @@ void main(uint3 DTid : SV_DispatchThreadID)
     // Combine lightning parts
     float4 finalColor = colour * ambientFinal + colour * diffuseFinal + colour * specularFinal;
     
-    float4 debugColor = float4(viewProjection[0].xyz, 1);
+    //float4 debugColor = float4(viewProjection[0].xyz, 1);
     //float4 debugColor2 = float4(0, 0, -1, 1);
-   
-    backBufferUAV[DTid.xy] = finalColor;
+    //RWTexture2D tempBackBuffer = backBufferUAV[0];
+    backBufferUAV[DTid.xyz] = finalColor;
 
 }

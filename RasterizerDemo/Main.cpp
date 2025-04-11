@@ -97,7 +97,8 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		immediateContext->CSSetShader(cShaderCubeMap, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &cubeMapUavArray[i], nullptr);
 		immediateContext->CSSetShaderResources(0, nrOfGBuffers, gBufferCubeMapSRV);
-		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);		
+		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);	
+		immediateContext->VSSetConstantBuffers(0, 0, nullptr);
 	}
 	immediateContext->VSSetConstantBuffers(0, 0, nullptr);
 	immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr); 
@@ -177,7 +178,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	modelNames.push_back("torus.obj");
 
 	//modelNames.push_back("monkey.obj");
-	modelNames.push_back("untitled1.obj");
+	modelNames.push_back("torus.obj");
 
 	UINT nrModels = static_cast<UINT>(modelNames.size());
 
@@ -394,9 +395,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (DynamicCubeMapsEnabled)
 		{
 			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[0]);
-			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState, 
-				cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray ,inputLayout, vBuffer[0], iBuffer[0],
-				cubeMapCameras, &tempBuffer[0],  materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
+			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
+				cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, vBuffer[0], iBuffer[0],
+				cubeMapCameras, &tempBuffer[0], materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
 		}
 
 		// Cleararing from last frame of main rendering
@@ -415,20 +416,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Gemoetry pass
 		for (int i = 0; i < nrModels; ++i)
 		{
-			if (i == 3)
-			{
-				// render reflective object
-				//immediateContext->PSSetShaderResources(0, 1, &cubeMapSrv);
-				immediateContext->PSSetShaderResources(0, 1, &cubeMapSrv);
-				immediateContext->PSSetConstantBuffers(1, 1, &constantCameraBuffer);
-				Render(immediateContext, rtvArr, dsView, dsState,
-					viewport, vShader, pShaderCubeMap, cShader, inputLayout,
-					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
-					bufferArray, materialBufferArray[i], nrOfGBuffers);
-				immediateContext->PSSetConstantBuffers(1, 0, nullptr);
-
-			}
-			else
+			if (i != 3) 
 			{
 				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
@@ -437,7 +425,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 			}
-
+			
 		}
 		// Unbinding GBuffer RTVs
 		ID3D11RenderTargetView* nullRTV[1] = { nullptr };
@@ -454,6 +442,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
 
 		immediateContext->CSSetShaderResources(0, 1, nullSRV);
+		immediateContext->CSSetShader(nullptr, nullptr, NULL);
+
+		// Forward rendering off cubemap
+		if (DynamicCubeMapsEnabled) {
+			immediateContext->PSSetShaderResources(0, 1, &cubeMapSrv);
+			immediateContext->PSSetConstantBuffers(1, 1, &bufferArray2[1]);
+			Render(immediateContext, rtvArr, dsView, dsState,
+				viewport, vShader, pShaderCubeMap, cShaderCubeMap, inputLayout,
+				vBuffer[3], iBuffer[3], *tempBufferArray[3], currentBuffer,
+				bufferArray, materialBufferArray[3], nrOfGBuffers);
+			immediateContext->PSSetConstantBuffers(1, 0, nullptr);
+		}
+
+		// Unbinding GBuffer RTVs
+		//ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+		immediateContext->OMSetRenderTargets(1, nullRTV, nullptr);
+
+		immediateContext->CSSetShader(cShader, nullptr, 0);
+		immediateContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		immediateContext->CSSetShaderResources(0, nrOfGBuffers, srvArr);
+		immediateContext->CSSetConstantBuffers(0, 3, bufferArray2);
+		immediateContext->Dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
 		swapChain->Present(0, 0);
 

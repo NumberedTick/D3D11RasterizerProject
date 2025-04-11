@@ -63,7 +63,9 @@ void main( uint3 DTid:SV_DispatchThreadID)
     // Combine lightning parts
     float4 finalColor = colour * ambientFinal + colour * diffuseFinal + colour * specularFinal;
     
-    float4 debugColor = float4(viewProjection[0].xyz, 1);
+    float4 debugColor = float4(cameraPosition, 1);
+    
+    float4 finalDebugColor = debugColor * ambientFinal + debugColor * diffuseFinal + debugColor * specularFinal;
     //float4 debugColor2 = float4(0, 0, -1, 1);
    
     backBufferUAV[DTid.xy] = finalColor;

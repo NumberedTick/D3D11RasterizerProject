@@ -47,17 +47,18 @@ PixelShaderOutput main(PixelShaderInput input)
 	
     float3 normal = normalize(input.normal);
     float3 incomingView = normalize(input.worldPos.xyz-cameraPos);
-    float3 reflectedView = normalize(-reflect(incomingView, normal)); // not a problem
+    float3 reflectedView = normalize(reflect(incomingView, normal)); // not a problem
     float4 sampledValue = reflectionTexture.Sample(standardSampler, reflectedView); // problem seams to be here
     
     output.colour = sampledValue;
     //output.colour = reflectionTexture.Sample(standardSampler, float3(input.uvcoords, 5));
-    output.normal = float4(input.normal, 0);
+    output.normal = float4(input.normal, 1);
     //output.colour = float4(reflectedView, 1); // was thested with his
-    output.position = float4(input.worldPos, 0);
+    //output.colour = float4(cameraPos, 1);
+    output.position = float4(input.worldPos, 1);
     output.ambient = float4(1, 1, 1, 1);
-    output.diffuse = float4(0, 0, 0, 0);
-    output.specular = float4(0, 0, 0, 0);
+    output.diffuse = float4(1, 1, 1, 1);
+    output.specular = float4(1, 1, 1, 1);
 	
     return output;
 };

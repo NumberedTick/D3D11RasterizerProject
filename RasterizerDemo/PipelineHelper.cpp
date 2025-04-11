@@ -621,7 +621,7 @@ bool CreateTextrueCubeReusableResources(ID3D11Device* device, CameraD3D11**& cam
 	desc.Usage = D3D11_USAGE_DEFAULT;
 	desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
 	desc.CPUAccessFlags = 0;
-	desc.MiscFlags = 0;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
 	HRESULT hr = device->CreateTexture2D(&desc, nullptr, &cubeMapBackBuffer);
 	if (FAILED(hr))
