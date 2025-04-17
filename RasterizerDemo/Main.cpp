@@ -46,59 +46,71 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 
 void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11*& vertexBuffer, 
-	IndexBufferD3D11*& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer* worldMatrixBuffer,	ConstantBufferD3D11*& materialBufferArray, ID3D11UnorderedAccessView*& uav, 
-	ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers)
+	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11**& vertexBuffer, 
+	IndexBufferD3D11**& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer** worldMatrixBuffer,	ConstantBufferD3D11**& materialBufferArray, ID3D11UnorderedAccessView*& uav, 
+	ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers, ID3D11ShaderResourceView**& srvModelTextures)
 {
 	
 	ID3D11RenderTargetView* nullRTV = nullptr;
 
-	ID3D11Buffer* materialBuffer = materialBufferArray->GetBuffer();
-	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
+
+
+	immediateContext->IASetInputLayout(inputLayout);
+	immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	immediateContext->OMSetDepthStencilState(dsState, 0);
+	immediateContext->VSSetShader(vShader, nullptr, 0);
+	immediateContext->PSSetShader(pShader, nullptr, 0);
+	immediateContext->RSSetViewports(1, &viewport);
+
+
 
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
-	ID3D11Buffer* buffers[] = { vertexBuffer[0].GetBuffer() };
-	ID3D11Buffer* indexBuffers[] = { indexBuffer[0].GetBuffer() };
+
 
 	float clearColour[4] = { 0, 0, 0, 0 };
 
-
 	for (int i = 0; i < 6; ++i) // Render relevant objects for each of the six sides in the texture cube. 
 	{
-
-
+		// add for loop for each model to render one side at a time
+		// add check if model is the cube map itself
 		for (int j = 0; j < nrOfGBuffers; ++j)
 		{
 			immediateContext->ClearRenderTargetView(rtvArr[j], clearColour);
 		}
 
+		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+
 		XMFLOAT4X4 tempFloat4X4 = cubeMapCameras[i]->GetViewProjectionMatrix();
 		cubeMapCameras[i]->UpdateInternalConstantBuffer(immediateContext);
 		ID3D11Buffer* currentBuffer = cubeMapCameras[i]->GetConstantBuffer();
-		immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
-		immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
-		immediateContext->IASetInputLayout(inputLayout);
-		immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		immediateContext->OMSetDepthStencilState(dsState, 0);
-		immediateContext->VSSetShader(vShader, nullptr, 0);
-		immediateContext->VSSetConstantBuffers(0, 1, &worldMatrixBuffer);
-		immediateContext->RSSetViewports(1, &viewport);
-		immediateContext->PSSetShader(pShader, nullptr, 0);
-		immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 
-		immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
+		for (int k = 0; k < 4; ++k) {
+			if (k != 3) {
+				ID3D11Buffer* buffers[] = { vertexBuffer[k][0].GetBuffer() };
+				ID3D11Buffer* indexBuffers[] = { indexBuffer[k][0].GetBuffer() };
+				immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
+				immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
+				immediateContext->VSSetConstantBuffers(0, 1, &worldMatrixBuffer[k]);
+				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[k]);
+				ID3D11Buffer* materialBuffer = materialBufferArray[k]->GetBuffer();
+				immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
+				immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
+				immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
+				immediateContext->DrawIndexed(indexBuffer[k][0].GetNrOfIndices(), 0, 0);
+			}
+		}
 
-		immediateContext->ClearDepthStencilView(dsView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
-		immediateContext->DrawIndexed(indexBuffer[0].GetNrOfIndices(), 0, 0);
+
 
 		immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr);
-
+		// go out of for loop and draw again. 
 		immediateContext->CSSetShader(cShaderCubeMap, nullptr, 0);
 		immediateContext->CSSetUnorderedAccessViews(0, 1, &cubeMapUavArray[i], nullptr);
 		immediateContext->CSSetShaderResources(0, nrOfGBuffers, gBufferCubeMapSRV);
 		immediateContext->Dispatch(1024 / 8, 1024 / 8, 1);	
 		immediateContext->VSSetConstantBuffers(0, 0, nullptr);
+		// clear gbuffers for next side of the cube. 
 	}
 	immediateContext->VSSetConstantBuffers(0, 0, nullptr);
 	immediateContext->OMSetRenderTargets(1, &nullRTV, nullptr); 
@@ -178,7 +190,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	modelNames.push_back("torus.obj");
 
 	//modelNames.push_back("monkey.obj");
-	modelNames.push_back("torus.obj");
+	modelNames.push_back("smoothSphere.obj");
 
 	UINT nrModels = static_cast<UINT>(modelNames.size());
 
@@ -350,11 +362,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* tempBuffer2;
 	tempBuffer2 = newWorldMatrixBuffer.GetBuffer();
 
-	ID3D11Buffer** tempBufferArray[4];
-	tempBufferArray[0] = &tempBuffer;
-	tempBufferArray[1] = &constantWorldMatrixBuffer;
-	tempBufferArray[2] = &tempBuffer2;
-	tempBufferArray[3] = &tempBuffer;
+	ID3D11Buffer* tempBufferArray[4];
+	tempBufferArray[0] = tempBuffer;
+	tempBufferArray[1] = constantWorldMatrixBuffer;
+	tempBufferArray[2] = tempBuffer2;
+	tempBufferArray[3] = tempBuffer;
 
 	ID3D11Buffer* bufferArray[3] = { constantLightBuffer, constantMaterialBuffer, constantCameraBuffer};
 
@@ -365,6 +377,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMFLOAT3 position = mainCamera.GetPosition();
 
 	ID3D11Buffer* bufferArray2[3] = { constantLightBuffer, cameraPositionBuffer.GetBuffer()};
+
+	
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
@@ -394,10 +408,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Rendering the dynamic cube map
 		if (DynamicCubeMapsEnabled)
 		{
-			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[0]);
+
+
+				RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
+					cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, vBuffer, iBuffer,
+					cubeMapCameras, tempBufferArray, materialBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvModelTextures);
+			
+			/*
+			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[1]);
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
-				cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, vBuffer[0], iBuffer[0],
-				cubeMapCameras, &tempBuffer[0], materialBufferArray[0], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
+				cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, vBuffer[1], iBuffer[1],
+				cubeMapCameras, *tempBufferArray[1], materialBufferArray[1], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
+			*/
 		}
 
 		// Cleararing from last frame of main rendering
@@ -422,7 +444,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
-					vBuffer[i], iBuffer[i], *tempBufferArray[i], currentBuffer,
+					vBuffer[i], iBuffer[i], tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers);
 			}
 			
@@ -450,7 +472,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			immediateContext->PSSetConstantBuffers(1, 1, &bufferArray2[1]);
 			Render(immediateContext, rtvArr, dsView, dsState,
 				viewport, vShader, pShaderCubeMap, cShaderCubeMap, inputLayout,
-				vBuffer[3], iBuffer[3], *tempBufferArray[3], currentBuffer,
+				vBuffer[3], iBuffer[3], tempBufferArray[3], currentBuffer,
 				bufferArray, materialBufferArray[3], nrOfGBuffers);
 			immediateContext->PSSetConstantBuffers(1, 0, nullptr);
 		}
