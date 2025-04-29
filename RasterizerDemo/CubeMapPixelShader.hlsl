@@ -57,8 +57,8 @@ PixelShaderOutput main(PixelShaderInput input)
     //output.colour = float4(cameraPos, 1);
     output.position = float4(input.worldPos, 1);
     output.ambient = float4(1, 1, 1, 1);
-    output.diffuse = float4(1, 1, 1, 1);
-    output.specular = float4(1, 1, 1, 1);
+    output.diffuse = float4(0, 0, 0, 0);
+    output.specular = float4(0, 0, 0, 0);
 	
     return output;
 };

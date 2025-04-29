@@ -316,7 +316,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		
 	}
-	
+	// create entities and assign index buffer ID, vertex buffer ID, Texture ID, modle name, texture name, 
 
 	MSG msg = { };
 
@@ -378,6 +378,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	ID3D11Buffer* bufferArray2[3] = { constantLightBuffer, cameraPositionBuffer.GetBuffer()};
 
+	bool willBeRendred = false;
+
+	std::vector<int> renderIDs;
 	
 	//rendering loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
@@ -403,23 +406,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		mainCamera.UpdateInternalConstantBuffer(immediateContext);
 
+
+
+		/*
+		
+		for (int id = 0; id < nrEntites; id++) 
+		{
+			// check which entities are suposed to render
+
+			if (willBeRendred)
+			{
+				renderIDs.push_back(id);
+			}
+		}
+		*/
+
+
+
+
 		// Rendering part
 
 		// Rendering the dynamic cube map
 		if (DynamicCubeMapsEnabled)
 		{
-
-
-				RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
+			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
 					cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, vBuffer, iBuffer,
 					cubeMapCameras, tempBufferArray, materialBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvModelTextures);
-			
-			/*
-			immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[1]);
-			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
-				cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, vBuffer[1], iBuffer[1],
-				cubeMapCameras, *tempBufferArray[1], materialBufferArray[1], uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers);
-			*/
 		}
 
 		// Cleararing from last frame of main rendering

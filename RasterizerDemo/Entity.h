@@ -4,18 +4,24 @@
 #include "ShaderResourceTextureD3D11.h"
 
 #include <d3d11_4.h>
+#include <DirectXCollision.h>
 
 class Entity
 {
 private:
 	// Save IDs instead of lage data
+	// 
 	// use Maps
 	// create meshID 
 	// MeshD3D11 mesh;
+	int moddleID;
+	int textureID;
 	std::string modelName;
 	std::string textureName;
 	ShaderResourceTextureD3D11 textureSRV;
 	ID3D11Buffer* materialBuffer = nullptr;
+	DirectX::BoundingBox& boundngBox;
+
 	bool cubeMap = false;
 
 public:
