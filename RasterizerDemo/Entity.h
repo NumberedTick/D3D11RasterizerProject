@@ -2,6 +2,7 @@
 
 #include "MeshD3D11.h"
 #include "ShaderResourceTextureD3D11.h"
+#include "TextureD3D11.h"
 
 #include <d3d11_4.h>
 #include <DirectXCollision.h>
@@ -9,18 +10,24 @@
 class Entity
 {
 private:
+
+	DirectX::XMFLOAT3 position;
+	DirectX::XMFLOAT3 rotation;
+	DirectX::XMFLOAT3 scale;
+	// save world matrix
+	
 	// Save IDs instead of lage data
 	// 
 	// use Maps
 	// create meshID 
-	// MeshD3D11 mesh;
-	int moddleID;
-	int textureID;
-	std::string modelName;
-	std::string textureName;
-	ShaderResourceTextureD3D11 textureSRV;
-	ID3D11Buffer* materialBuffer = nullptr;
-	DirectX::BoundingBox& boundngBox;
+	MeshD3D11 mesh;
+	TextureD3D11 texture;
+	//int textureID;
+	// Create Texture.h file for texture infor and buffers
+	//std::string textureName;
+	//ShaderResourceTextureD3D11 textureSRV;
+	//ID3D11Buffer* materialBuffer = nullptr; maybe use in meshd3d11.h/.cpp
+	DirectX::BoundingBox boundngBox;
 
 	bool cubeMap = false;
 
@@ -36,12 +43,19 @@ public:
 		const std::string& modelName, const std::string& textureName, 
 		const std::string& pathToTextureFile, bool isCubeMap);
 
-	MeshD3D11 getMesh() const;
+	//MeshD3D11 getMesh() const;
 	std::string getModelName() const;
 	std::string getTextureName() const;
-	ShaderResourceTextureD3D11 getTextureSRV() const;
+	//ShaderResourceTextureD3D11 getTextureSRV() const;
 	ID3D11Buffer* getMaterialBuffer() const;
 	bool isCubeMap() const;
+	int getModelID() const;
+	int getTextureID() const;
+	DirectX::BoundingBox& getBoundingBox() const;
 
-	void performDrawCall(ID3D11DeviceContext* context) const;
+	int setModelID(int id);
+	int setTextureID(int id);
+	DirectX::BoundingBox& setBoundingBox(DirectX::BoundingBox& boundingBox);
+
+	//void performDrawCall(ID3D11DeviceContext* context) const;
 };

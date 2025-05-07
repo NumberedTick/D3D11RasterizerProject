@@ -4,6 +4,7 @@
 #include <DirectXMath.h>
 #include <chrono>
 #include <vector>
+#include <DirectXCollision.h>
 
 #include "WindowHelper.h"
 #include "D3D11Helper.h"
@@ -12,6 +13,7 @@
 #include "VertexBufferD3D11.h"
 #include "CameraD3D11.h"
 #include "MeshD3D11.h"
+#include "Entity.h"
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
@@ -48,7 +50,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, VertexBufferD3D11**& vertexBuffer, 
 	IndexBufferD3D11**& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer** worldMatrixBuffer,	ConstantBufferD3D11**& materialBufferArray, ID3D11UnorderedAccessView*& uav, 
-	ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers, ID3D11ShaderResourceView**& srvModelTextures)
+	ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers, ID3D11ShaderResourceView**& srvMeshTextures)
 {
 	
 	ID3D11RenderTargetView* nullRTV = nullptr;
@@ -92,7 +94,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 				immediateContext->IASetVertexBuffers(0, 1, buffers, &stride, &offset);
 				immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
 				immediateContext->VSSetConstantBuffers(0, 1, &worldMatrixBuffer[k]);
-				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[k]);
+				immediateContext->PSSetShaderResources(0, 1, &srvMeshTextures[k]);
 				ID3D11Buffer* materialBuffer = materialBufferArray[k]->GetBuffer();
 				immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
 				immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
@@ -181,18 +183,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	
 	//MeshData testMesh;
 
-	// Loads Models into the scene
-	std::vector<std::string> modelNames;
+	// Loads meshes into the scene
+	std::vector<std::string> meshNames;
 
 
-	modelNames.push_back("roomHoles.obj");
-	modelNames.push_back("untitled.obj");
-	modelNames.push_back("torus.obj");
+	meshNames.push_back("roomHoles.obj");
+	meshNames.push_back("untitled.obj");
+	meshNames.push_back("torus.obj");
 
-	//modelNames.push_back("monkey.obj");
-	modelNames.push_back("smoothSphere.obj");
+	//meshNames.push_back("monkey.obj");
+	meshNames.push_back("smoothSphere.obj");
 
-	UINT nrModels = static_cast<UINT>(modelNames.size());
+	UINT nrOfMeshes = static_cast<UINT>(meshNames.size());
+
+	MeshD3D11** meshArray = new MeshD3D11 * [nrOfMeshes];
 
 	// Loads textures
 
@@ -202,17 +206,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	textureNames.push_back("texture.jpg");
 
 
-	Material** materialArray = new Material * [nrModels]; // MEMORY LEAK
+	Material** materialArray = new Material * [nrOfMeshes]; // MEMORY LEAK
 
-	ConstantBufferD3D11** materialBufferArray = new ConstantBufferD3D11 * [nrModels]; // MEMORY LEAK
+	ConstantBufferD3D11** materialBufferArray = new ConstantBufferD3D11 * [nrOfMeshes]; // MEMORY LEAK
 
 	std::string missingTexture = "missing.jpg";
 	// Creates VertexBuffers for each model loaded (currently doing it manually)
-	VertexBufferD3D11** vBuffer = new VertexBufferD3D11 * [nrModels];
+	VertexBufferD3D11** vBuffer = new VertexBufferD3D11 * [nrOfMeshes];
 
-	IndexBufferD3D11** iBuffer = new IndexBufferD3D11 * [nrModels];
+	IndexBufferD3D11** iBuffer = new IndexBufferD3D11 * [nrOfMeshes];
 
-	for (int i = 0; i < nrModels; ++i)
+	for (int i = 0; i < nrOfMeshes; ++i)
 	{
 		vBuffer[i] = new VertexBufferD3D11;
 		iBuffer[i] = new IndexBufferD3D11;
@@ -274,7 +278,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		constantWorldMatrixBuffer, constantViewProjMatrixBuffer, constantLightBuffer, constantMaterialBuffer,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
-		samplerState, modelNames, WIDTH, HEIGHT, materialArray, materialBufferArray, uavTextureCube, mainCamera, cameraPositionBuffer))
+		samplerState, meshNames, WIDTH, HEIGHT, materialArray, materialBufferArray, uavTextureCube, mainCamera, cameraPositionBuffer))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -282,19 +286,19 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 	// Creation of the needed textures for each model
-	ID3D11Texture2D** modelTextures = new ID3D11Texture2D* [nrModels];
-	ID3D11ShaderResourceView** srvModelTextures = new ID3D11ShaderResourceView* [nrModels];
-	for (int i = 0; i < nrModels; ++i)
+	ID3D11Texture2D** meshTextures = new ID3D11Texture2D* [nrOfMeshes];
+	ID3D11ShaderResourceView** srvMeshTextures = new ID3D11ShaderResourceView* [nrOfMeshes];
+	for (int i = 0; i < nrOfMeshes; ++i)
 	{
 		if (i < textureNames.size()) 
 		{
-			if (!Create2DTexture(device, modelTextures[i], textureNames[i]))
+			if (!Create2DTexture(device, meshTextures[i], textureNames[i]))
 			{
 				std::cerr << "Failed to create 2DTexture for model!" << std::endl;
 				return -1;
 			}
 
-			if (!CreateSRV(device, modelTextures[i], srvModelTextures[i]))
+			if (!CreateSRV(device, meshTextures[i], srvMeshTextures[i]))
 			{
 				std::cerr << "Failed to create SRV for model texture!" << std::endl;
 				return -1;
@@ -302,13 +306,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else // only used to create missing texture if there are more models than textures,
 		{
-			if (!Create2DTexture(device, modelTextures[i], missingTexture))
+			if (!Create2DTexture(device, meshTextures[i], missingTexture))
 			{
 				std::cerr << "Failed to create 2DTexture for missing texture!" << std::endl;
 				return -1;
 			}
 
-			if (!CreateSRV(device, modelTextures[i], srvModelTextures[i]))
+			if (!CreateSRV(device, meshTextures[i], srvMeshTextures[i]))
 			{
 				std::cerr << "Failed to create SRV for model texture!" << std::endl;
 				return -1;
@@ -321,6 +325,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	MSG msg = { };
 
 	XMFLOAT4X4 float4x4Array[3];
+
+
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 
@@ -378,11 +384,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	ID3D11Buffer* bufferArray2[3] = { constantLightBuffer, cameraPositionBuffer.GetBuffer()};
 
-	bool willBeRendred = false;
+	//bool willBeRendred = false;
 
-	std::vector<int> renderIDs;
-	
-	//rendering loop
+	//std::vector<int> renderIDs;
+
+	BoundingBox boundingBox[4];
+	XMFLOAT3 boundingBoxCorners[] = {XMFLOAT3(1, 1, 1), XMFLOAT3(-1, -1, -1)};
+	boundingBox[0].CreateFromPoints(boundingBox[0], 2, boundingBoxCorners, sizeof(SimpleVertex));
+	boundingBox[0].GetCorners(boundingBoxCorners);
+
+	//Entity entinty;
+
+	XMFLOAT4X4 cameraViewProjMatrixFloat4x4 = mainCamera.GetViewProjectionMatrix();
+
+	XMMATRIX cameraViewProjMatrix = XMLoadFloat4x4(&cameraViewProjMatrixFloat4x4);
+
+	BoundingFrustum boundingFrustum;
+	boundingFrustum.CreateFromMatrix(boundingFrustum, cameraViewProjMatrix);
+	//boundingFrustum
+
+	//XMFLOAT3 boundingBoxCorners[8];
+
+	// Main loop
 	while (!(GetKeyState(VK_ESCAPE) & 0x8000) && msg.message != WM_QUIT)
 	{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -405,9 +428,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 		mainCamera.UpdateInternalConstantBuffer(immediateContext);
+		cameraViewProjMatrixFloat4x4 = mainCamera.GetViewProjectionMatrix();
+		cameraViewProjMatrix = XMLoadFloat4x4(&cameraViewProjMatrixFloat4x4);
+		boundingFrustum.Transform(boundingFrustum, cameraViewProjMatrix);
 
+		
 
+		boundingFrustum.GetCorners(boundingBoxCorners);
 
+		//boundingBoxCorners;
 		/*
 		
 		for (int id = 0; id < nrEntites; id++) 
@@ -422,8 +451,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		*/
 
 
-
-
 		// Rendering part
 
 		// Rendering the dynamic cube map
@@ -431,7 +458,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
 					cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, vBuffer, iBuffer,
-					cubeMapCameras, tempBufferArray, materialBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvModelTextures);
+					cubeMapCameras, tempBufferArray, materialBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvMeshTextures);
 		}
 
 		// Cleararing from last frame of main rendering
@@ -448,11 +475,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		bufferArray2[2] = currentBuffer;
 
 		// Gemoetry pass
-		for (int i = 0; i < nrModels; ++i)
+		for (int i = 0; i < nrOfMeshes; ++i)
 		{
 			if (i != 3) 
 			{
-				immediateContext->PSSetShaderResources(0, 1, &srvModelTextures[i]);
+				immediateContext->PSSetShaderResources(0, 1, &srvMeshTextures[i]);
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
@@ -518,17 +545,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			rotationAmount = 0;
 		}		
-		
-		/*
-		if (xDist >= 1.0f)
-		{
-			xDist = 0.0f;
-		}
-		*/
 
 		
-		//mainCamera.MoveForward(deltaTime);
-		//mainCamera.RotateUp(-deltaTime/2);
+		// Check for key presses
 		if (GetKeyState('S') & 0x8000)
 		{
 			mainCamera.MoveForward(-0.1);
@@ -569,16 +588,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			mainCamera.RotateUp(-XM_2PI / 720);
 		}
-		/*
-		immediateContext->Map(bufferArray2[1], 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
-		memcpy(mappedResource.pData, &float4x4Array, sizeof(XMFLOAT4X4));
-		immediateContext->Unmap(bufferArray2[1], 0);
-		*/
 
 
 		// Adaptivly adding rotation amount for each frame so that it will make a full rotation in a set amount of time'
 		rotationAmount += (deltaTime)*XM_2PI;
-		//xDist += (deltaTime) * 0.5f;
 	}
 
 
@@ -595,18 +608,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	delete[] gBufferSrv;
 
 	samplerState->Release();
-	for (int i = 0; i < nrModels; ++i)
+	for (int i = 0; i < nrOfMeshes; ++i)
 	{
 		delete vBuffer[i];
 		delete iBuffer[i];
-		modelTextures[i]->Release();
-		srvModelTextures[i]->Release();
+		meshTextures[i]->Release();
+		srvMeshTextures[i]->Release();
 	}
 
 	delete[] vBuffer;
 	delete[] iBuffer;
-	delete[] modelTextures;
-	delete[] srvModelTextures;
+	delete[] meshTextures;
+	delete[] srvMeshTextures;
 
 	for (int i = 0; i < 6; ++i)
 	{

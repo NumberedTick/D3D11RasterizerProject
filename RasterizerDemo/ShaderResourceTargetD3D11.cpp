@@ -1,5 +1,12 @@
 #include "ShaderResourceTextureD3D11.h"
 
+
+
+
+ShaderResourceTextureD3D11::ShaderResourceTextureD3D11(ID3D11Device* device, UINT width, UINT height, void* textureData)
+{
+
+}
 ShaderResourceTextureD3D11::ShaderResourceTextureD3D11(ID3D11Device* device, const char* pathToTextureFile) 
 {
 

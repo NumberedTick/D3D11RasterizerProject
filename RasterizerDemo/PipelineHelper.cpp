@@ -342,6 +342,10 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	return true;
 }
 
+// New function called CreateMesh that creates the meshes needed for the obejcts loaded
+//
+// paramiters (device, meshNames, MaterialArray)
+//
 
 
 // Creation of the Vertex Buffer

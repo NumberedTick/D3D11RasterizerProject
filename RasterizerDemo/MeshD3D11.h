@@ -7,9 +7,12 @@
 #include "SubMeshD3D11.h"
 #include "VertexBufferD3D11.h"
 #include "IndexBufferD3D11.h"
+#include <string>
 
 struct MeshData
 {
+	std::string modelName; 
+
 	struct VertexInfo
 	{
 		size_t sizeOfVertex;
@@ -38,9 +41,11 @@ struct MeshData
 class MeshD3D11
 {
 private:
+	MeshData meshData;
 	std::vector<SubMeshD3D11> subMeshes;
 	VertexBufferD3D11 vertexBuffer;
 	IndexBufferD3D11 indexBuffer;
+	ID3D11Buffer* materialBuffer = nullptr;
 
 public:
 	MeshD3D11() = default;
@@ -59,4 +64,10 @@ public:
 	ID3D11ShaderResourceView* GetAmbientSRV(size_t subMeshIndex) const;
 	ID3D11ShaderResourceView* GetDiffuseSRV(size_t subMeshIndex) const;
 	ID3D11ShaderResourceView* GetSpecularSRV(size_t subMeshIndex) const;
+	std::string GetMeshName() const;
+	UINT GetNrOfVertices() const;
+	UINT GetVertexSize() const;
+	UINT GetNrOfIndices() const;
+	ID3D11Buffer* GetVertexBuffer() const;
+	ID3D11Buffer* GetIndexBuffer() const;
 };

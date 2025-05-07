@@ -3,13 +3,11 @@
 // Initialization function
 void MeshD3D11::Initialize(ID3D11Device* device, const MeshData& meshInfo)
 {
-	VertexBufferD3D11 meshVertexBuffer;
-	IndexBufferD3D11 meshIndexBuffer;
-	SubMeshD3D11 subMesh;
-
-	meshVertexBuffer.Initialize(device, meshInfo.vertexInfo.nrOfVerticesInBuffer, meshInfo.vertexInfo.sizeOfVertex, meshInfo.vertexInfo.vertexData);
-	meshIndexBuffer.Initialize(device, meshInfo.indexInfo.nrOfIndicesInBuffer, meshInfo.indexInfo.indexData);
-	subMesh.Initialize(meshInfo.subMeshInfo[0].startIndexValue, meshInfo.subMeshInfo[0].nrOfIndicesInSubMesh, meshInfo.subMeshInfo[0].ambientTextureSRV, meshInfo.subMeshInfo[0].diffuseTextureSRV, meshInfo.subMeshInfo[0].specularTextureSRV);
+	//SubMeshD3D11 subMesh;
+	this->meshData = meshInfo;
+	this->vertexBuffer.Initialize(device, this->meshData.vertexInfo.nrOfVerticesInBuffer, this->meshData.vertexInfo.sizeOfVertex, this->meshData.vertexInfo.vertexData);
+	this->indexBuffer.Initialize(device, this->meshData.indexInfo.nrOfIndicesInBuffer, this->meshData.indexInfo.indexData);
+	//subMesh.Initialize(meshInfo.subMeshInfo[0].startIndexValue, meshInfo.subMeshInfo[0].nrOfIndicesInSubMesh, meshInfo.subMeshInfo[0].ambientTextureSRV, meshInfo.subMeshInfo[0].diffuseTextureSRV, meshInfo.subMeshInfo[0].specularTextureSRV);
 }
 
 void MeshD3D11::BindMeshBuffers(ID3D11DeviceContext* context) const
@@ -40,4 +38,34 @@ ID3D11ShaderResourceView* MeshD3D11::GetDiffuseSRV(size_t subMeshIndex) const
 ID3D11ShaderResourceView* MeshD3D11::GetSpecularSRV(size_t subMeshIndex) const
 {
 	return this->subMeshes[subMeshIndex].GetSpecularSRV();
+}
+
+std::string MeshD3D11::GetMeshName() const
+{
+	return this->meshData.modelName;
+}
+
+UINT MeshD3D11::GetNrOfVertices() const
+{
+	return this->vertexBuffer.GetNrOfVertices();
+}
+
+UINT MeshD3D11::GetVertexSize() const
+{
+	return this->vertexBuffer.GetVertexSize();
+}
+
+UINT MeshD3D11::GetNrOfIndices() const
+{
+	return this->indexBuffer.GetNrOfIndices();
+}
+
+ID3D11Buffer* MeshD3D11::GetVertexBuffer() const
+{
+	return this->vertexBuffer.GetBuffer();
+}
+
+ID3D11Buffer* MeshD3D11::GetIndexBuffer() const
+{
+	return this->indexBuffer.GetBuffer();
 }
