@@ -187,6 +187,8 @@ bool LoadObj(std::string& modleName, objl::Loader& objLoader)
 
 bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexes) 
 {
+
+	// remove later
 	objl::Loader objLoader;
 	if (!LoadObj(modleName, objLoader))
 	{
@@ -216,6 +218,7 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 
 bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 {
+	// remove later
 	objl::Loader objLoader;
 	if (!LoadObj(modleName, objLoader))
 	{
@@ -346,6 +349,27 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 //
 // paramiters (device, meshNames, MaterialArray)
 //
+/*
+bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames)
+{
+	for (int i = 0; i < meshNames.size(); i++)
+	{
+		std::vector<SimpleVertex> Vertices;
+		std::vector<unsigned int> indices;	
+
+		objl::Loader objLoader;
+		if (!LoadObj(modleName, objLoader))
+		{
+			return false;
+		}
+		if (!LoadVertexs(objLoader, Vertices)) // change to take in objLoader
+		{
+			return false;
+		}
+
+	}
+}
+*/
 
 
 // Creation of the Vertex Buffer

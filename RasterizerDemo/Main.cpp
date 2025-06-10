@@ -387,11 +387,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//bool willBeRendred = false;
 
 	//std::vector<int> renderIDs;
-
+	/*	
 	BoundingBox boundingBox[4];
-	XMFLOAT3 boundingBoxCorners[] = {XMFLOAT3(1, 1, 1), XMFLOAT3(-1, -1, -1)};
+	
 	boundingBox[0].CreateFromPoints(boundingBox[0], 2, boundingBoxCorners, sizeof(SimpleVertex));
 	boundingBox[0].GetCorners(boundingBoxCorners);
+
+
+	XMFLOAT3 boundingBoxCorners[] = { XMFLOAT3(1, 1, 1), XMFLOAT3(-1, -1, -1) };
+	boundingBox.CreateFromPoints(boundingBox, 2, boundingBoxCorners, sizeof(SimpleVertex));
+	
+	*/
+	
 
 	//Entity entinty;
 
@@ -434,7 +441,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		
 
-		boundingFrustum.GetCorners(boundingBoxCorners);
+		//boundingFrustum.GetCorners(boundingBoxCorners);
 
 		//boundingBoxCorners;
 		/*

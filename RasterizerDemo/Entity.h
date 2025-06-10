@@ -3,6 +3,7 @@
 #include "MeshD3D11.h"
 #include "ShaderResourceTextureD3D11.h"
 #include "TextureD3D11.h"
+#include "ConstantBufferD3D11.h"
 
 #include <d3d11_4.h>
 #include <DirectXCollision.h>
@@ -11,18 +12,21 @@ class Entity
 {
 private:
 
-	DirectX::XMFLOAT3 position;
-	DirectX::XMFLOAT3 rotation;
-	DirectX::XMFLOAT3 scale;
+	DirectX::XMFLOAT3 position = { 0.0, 0.0, 0.0 };
+	DirectX::XMFLOAT3 rotation = { 0.0, 0.0, 0.0 };
+	DirectX::XMFLOAT3 scale = { 1.0, 1.0, 1.0 };
+
 	// save world matrix
+	ConstantBufferD3D11 worldMatrixBuffer; // for world matrix
+
+
 	
-	// Save IDs instead of lage data
-	// 
+	
+	
 	// use Maps
 	// create meshID 
 	MeshD3D11 mesh;
 	TextureD3D11 texture;
-	//int textureID;
 	// Create Texture.h file for texture infor and buffers
 	//std::string textureName;
 	//ShaderResourceTextureD3D11 textureSRV;
@@ -39,9 +43,10 @@ public:
 	Entity(Entity&& other) = delete;
 	Entity& operator=(Entity&& other) = delete;
 
-	void Initialize(ID3D11Device* device, const MeshData& meshData, 
-		const std::string& modelName, const std::string& textureName, 
-		const std::string& pathToTextureFile, bool isCubeMap);
+	void Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position, 
+		const DirectX::XMFLOAT3& roation, const DirectX::XMFLOAT3& scale, 
+		const MeshData& meshData, const TextureD3D11& textureObject, 
+		bool isCubeMap);
 
 	//MeshD3D11 getMesh() const;
 	std::string getModelName() const;
