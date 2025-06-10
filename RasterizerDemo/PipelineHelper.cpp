@@ -396,7 +396,7 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames)
 
 
 // Creation of the Vertex Buffer
-bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuffer, std::vector<std::string>& modelNames, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray)
+bool CreateVertexBuffer(ID3D11Device* device, std::vector<std::string>& modelNames, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer)
 {
 	
 	for (int i = 0; i < modelNames.size(); i++) 
@@ -415,13 +415,13 @@ bool CreateVertexBuffer(ID3D11Device* device, VertexBufferD3D11**& testVertexBuf
 			return false;
 		}
 
-		testVertexBuffer[i]->Initialize(device, sizeof(SimpleVertex), Vertices.size(), Vertices.data());
-		// Buffer des for vertex Buffer
-
-		if (testVertexBuffer[i]->GetBuffer() == nullptr)
+		uniqueVBuffer[i]->Initialize(device, sizeof(SimpleVertex), Vertices.size(), Vertices.data());
+		
+		if (uniqueVBuffer[i]->GetBuffer() == nullptr)
 		{
 			return false;
 		}
+		
 	}
 
 	return true;
@@ -768,13 +768,13 @@ enum TEXTURE_CUBE_FACE_INDEX
 };
 
 
-bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
+bool SetupPipeline(ID3D11Device* device, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader , ID3D11ComputeShader*& cShaderCubeMap ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, 
-	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer)
+	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer, std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, vShaderByteCode))
@@ -803,7 +803,7 @@ bool SetupPipeline(ID3D11Device* device, VertexBufferD3D11**& vertexBuffer, Inde
 	}
 
 
-	if (!CreateVertexBuffer(device, vertexBuffer, modelNames, materialArray, materialBufferArray))
+	if (!CreateVertexBuffer(device, modelNames, materialArray, materialBufferArray, uniqueVBuffer))
 	{
 		std::cerr << "Error creating vertex buffer!" << std::endl;
 		return false;
