@@ -5,7 +5,7 @@ void MeshD3D11::Initialize(ID3D11Device* device, const MeshData& meshInfo)
 {
 	//SubMeshD3D11 subMesh;
 	this->meshData = meshInfo;
-	this->vertexBuffer.Initialize(device, this->meshData.vertexInfo.nrOfVerticesInBuffer, this->meshData.vertexInfo.sizeOfVertex, this->meshData.vertexInfo.vertexData);
+	this->vertexBuffer.Initialize(device, this->meshData.vertexInfo.sizeOfVertex, this->meshData.vertexInfo.nrOfVerticesInBuffer, this->meshData.vertexInfo.vertexData);
 	this->indexBuffer.Initialize(device, this->meshData.indexInfo.nrOfIndicesInBuffer, this->meshData.indexInfo.indexData);
 	//subMesh.Initialize(meshInfo.subMeshInfo[0].startIndexValue, meshInfo.subMeshInfo[0].nrOfIndicesInSubMesh, meshInfo.subMeshInfo[0].ambientTextureSRV, meshInfo.subMeshInfo[0].diffuseTextureSRV, meshInfo.subMeshInfo[0].specularTextureSRV);
 }
@@ -18,6 +18,11 @@ void MeshD3D11::BindMeshBuffers(ID3D11DeviceContext* context) const
 void MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext* context, size_t subMeshIndex) const
 {
 
+}
+
+void MeshD3D11::SetMaterialBuffer(ID3D11Buffer* materialBuffer)
+{
+	this->materialBuffer = materialBuffer;
 }
 
 size_t MeshD3D11::GetNrOfSubMeshes() const
@@ -68,4 +73,9 @@ ID3D11Buffer* MeshD3D11::GetVertexBuffer() const
 ID3D11Buffer* MeshD3D11::GetIndexBuffer() const
 {
 	return this->indexBuffer.GetBuffer();
+}
+
+ID3D11Buffer* MeshD3D11::GetMaterialBuffer() const
+{
+	return this->materialBuffer;
 }

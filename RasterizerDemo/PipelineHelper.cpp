@@ -216,6 +216,29 @@ bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexe
 	return true;
 }
 
+bool tempLoadVertexs(objl::Loader objLoader, std::vector<SimpleVertex>& modelVertexes)
+{
+	for (int j = 0; j < objLoader.LoadedMeshes.size(); ++j)
+	{
+		for (int k = 0; k < objLoader.LoadedMeshes[j].Vertices.size(); ++k) {
+			SimpleVertex Vertex;
+			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
+			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
+			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
+
+			Vertex.norm[0] = -objLoader.LoadedVertices[k].Normal.X;
+			Vertex.norm[1] = -objLoader.LoadedVertices[k].Normal.Y;
+			Vertex.norm[2] = -objLoader.LoadedVertices[k].Normal.Z;
+
+			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
+			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
+
+			modelVertexes.push_back(Vertex);
+		}
+	}
+	return true;
+}
+
 bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 {
 	// remove later
@@ -232,6 +255,18 @@ bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
 
 	}
 
+	return true;
+}
+
+bool tempLoadIndices(objl::Loader objLoader, std::vector<unsigned int>& indices)
+{
+	// Loads indices into a vector
+	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
+	{
+		indices.push_back(objLoader.LoadedIndices[i]);
+
+	}
+	return true;
 
 }
 bool CreateWorldMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantWorldMatrixBuffer)
@@ -317,6 +352,12 @@ bool CreateMaterialBuffer(ID3D11Device* device, ConstantBufferD3D11*& constantBu
 	return true;
 }
 
+bool tempCreateMaterialBuffer(ID3D11Device* device, std::unique_ptr<ConstantBufferD3D11>& materialConstantBuffer, Material& material)
+{
+	materialConstantBuffer->Initialize(device, sizeof(Material), &material);
+	return true;
+}
+
 bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName, ConstantBufferD3D11*& materialConstantBuffer)
 {
 	objl::Loader objLoader;
@@ -345,27 +386,53 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	return true;
 }
 
+bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& material, std::unique_ptr<ConstantBufferD3D11>& materialConstantBuffer)
+{
+
+	// Color values
+	std::array<float, 4> ambientColor = { objLoader.LoadedMaterials[0].Ka.X, objLoader.LoadedMaterials[0].Ka.Y, objLoader.LoadedMaterials[0].Ka.Z, 1.0f };
+	std::array<float, 4> diffuseColor = { objLoader.LoadedMaterials[0].Kd.X,objLoader.LoadedMaterials[0].Kd.Y,objLoader.LoadedMaterials[0].Kd.Z,1.0f };
+	std::array<float, 4> specularColor = { objLoader.LoadedMaterials[0].Ks.X,objLoader.LoadedMaterials[0].Ks.Y,objLoader.LoadedMaterials[0].Ks.Z,1.0f };
+
+	// Material Coeficients
+	float ambientIntensity = 0.3f;
+	float padding = 0.0f;
+	float specularPower = objLoader.LoadedMaterials[0].Ns;
+
+	// Creation of the material
+	material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
+
+	if (!tempCreateMaterialBuffer(device, materialConstantBuffer, material))
+	{
+		return false;
+	}
+	return true;
+}
+
 // New function called CreateMesh that creates the meshes needed for the obejcts loaded
 //
 // paramiters (device, meshNames, MaterialArray)
 //
-/*
-bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames)
+
+bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::vector<std::unique_ptr<MeshD3D11>>& meshVector)
 {
 	for (int i = 0; i < meshNames.size(); i++)
 	{
 		std::vector<SimpleVertex> Vertices;
 		std::vector<unsigned int> indices;	
+
+		Material functionMaterial;
+		std::unique_ptr<ConstantBufferD3D11> materialConstantBuffer = std::make_unique<ConstantBufferD3D11>();
 		MeshData meshData;
 
 		objl::Loader objLoader;
-		if (!LoadObj(modleName, objLoader))
+		if (!LoadObj(meshNames[i], objLoader))
 		{
 			return false;
 		}
 
 		// Loading the vertexs and vertexInfo in the meshData
-		if (!LoadVertexs(objLoader, Vertices)) // change to take in objLoader
+		if (!tempLoadVertexs(objLoader, Vertices)) // change to take in objLoader
 		{
 			return false;
 		}
@@ -375,7 +442,7 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames)
 		meshData.vertexInfo.vertexData = Vertices.data();
 
 
-		if (!LoadIndices(objLoader, indices)) // change to take in objLoader
+		if (!tempLoadIndices(objLoader, indices)) // change to take in objLoader
 		{
 			return false;
 		}
@@ -384,14 +451,25 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames)
 		meshData.indexInfo.nrOfIndicesInBuffer = indices.size();
 		meshData.indexInfo.indexData = indices.data();
 
+		if (!tempCreateMaps(device, objLoader, functionMaterial, materialConstantBuffer))
+		{
+			return false;
+		}
+
+
 		// Handleing of the rest in mesdhData
 		meshData.modelName = meshNames[i];
 
-		MeshD3D11* mesh = new MeshD3D11;
+		meshVector[i]->Initialize(device, meshData);
+	
 
+		meshVector[i]->SetMaterialBuffer(materialConstantBuffer->GetBuffer());
+
+		
 	}
+	return true;
 }
-*/
+
 
 
 
@@ -774,7 +852,8 @@ bool SetupPipeline(ID3D11Device* device, IndexBufferD3D11**& indexBuffer,  ID3D1
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, 
-	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer, std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer)
+	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer, 
+	std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer, std::vector<std::unique_ptr<MeshD3D11>>& meshVector)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, vShaderByteCode))
@@ -815,6 +894,11 @@ bool SetupPipeline(ID3D11Device* device, IndexBufferD3D11**& indexBuffer,  ID3D1
 		return false;
 	}
 	
+	if (!CreateMesh(device, modelNames, meshVector))
+	{
+		std::cerr << "Error creating meshes!" << std::endl;
+		return false;
+	}
 
 	if (!CreateSampler(device, sampleState))
 	{
