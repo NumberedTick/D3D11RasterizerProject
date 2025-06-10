@@ -317,7 +317,7 @@ bool CreateMaterialBuffer(ID3D11Device* device, ConstantBufferD3D11*& constantBu
 	return true;
 }
 
-bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName, ConstantBufferD3D11*& constantBuffer)
+bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName, ConstantBufferD3D11*& materialConstantBuffer)
 {
 	objl::Loader objLoader;
 	if (!LoadObj(modleName, objLoader))
@@ -338,7 +338,7 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	// Creation of the material
 	material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
 
-	if (!CreateMaterialBuffer(device, constantBuffer, material))
+	if (!CreateMaterialBuffer(device, materialConstantBuffer, material))
 	{
 		return false;
 	}
@@ -356,20 +356,43 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames)
 	{
 		std::vector<SimpleVertex> Vertices;
 		std::vector<unsigned int> indices;	
+		MeshData meshData;
 
 		objl::Loader objLoader;
 		if (!LoadObj(modleName, objLoader))
 		{
 			return false;
 		}
+
+		// Loading the vertexs and vertexInfo in the meshData
 		if (!LoadVertexs(objLoader, Vertices)) // change to take in objLoader
 		{
 			return false;
 		}
+		// handeling meshData vertexInfo
+		meshData.vertexInfo.sizeOfVertex = sizeof(SimpleVertex);
+		meshData.vertexInfo.nrOfVerticesInBuffer = Vertices.size();
+		meshData.vertexInfo.vertexData = Vertices.data();
+
+
+		if (!LoadIndices(objLoader, indices)) // change to take in objLoader
+		{
+			return false;
+		}
+
+		// handeling meshData indexInfo
+		meshData.indexInfo.nrOfIndicesInBuffer = indices.size();
+		meshData.indexInfo.indexData = indices.data();
+
+		// Handleing of the rest in mesdhData
+		meshData.modelName = meshNames[i];
+
+		MeshD3D11* mesh = new MeshD3D11;
 
 	}
 }
 */
+
 
 
 // Creation of the Vertex Buffer

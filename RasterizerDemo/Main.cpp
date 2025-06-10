@@ -212,6 +212,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	std::string missingTexture = "missing.jpg";
 	// Creates VertexBuffers for each model loaded (currently doing it manually)
+
 	VertexBufferD3D11** vBuffer = new VertexBufferD3D11 * [nrOfMeshes];
 
 	IndexBufferD3D11** iBuffer = new IndexBufferD3D11 * [nrOfMeshes];
@@ -222,6 +223,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		iBuffer[i] = new IndexBufferD3D11;
 		materialArray[i] = new Material; // MEMORY LEAK
 		materialBufferArray[i] = new ConstantBufferD3D11; // MEMORY LEAK
+
+		// creats an empty mesh for each model loaded before it is loaded in pipeline helper
+		//meshArray[i] = new MeshD3D11; // MEMORY LEAK 
+
 	}
 
 	if (!SetupD3D11(WIDTH, HEIGHT, window, device, immediateContext, swapChain, rtv, uav, dsTexture, dsView, dsState, viewport))
