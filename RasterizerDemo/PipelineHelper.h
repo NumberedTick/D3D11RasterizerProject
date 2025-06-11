@@ -133,6 +133,6 @@ bool SetupPipeline(ID3D11Device* device, ID3D11VertexShader*& vShader,
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantCameraBuffer,
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray, ID3D11ShaderResourceView*& cubeMapSrv,
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
-	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, Material**& materialArray,
+	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height,
 	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer,
 	std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer, std::vector<std::unique_ptr<MeshD3D11>>& meshVector);

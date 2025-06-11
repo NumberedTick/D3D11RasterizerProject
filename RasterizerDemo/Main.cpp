@@ -155,7 +155,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Buffer* constantWorldMatrixBuffer;
 	ID3D11Buffer* constantViewProjMatrixBuffer;
 	ID3D11Buffer* constantLightBuffer;
-	ID3D11Buffer* constantMaterialBuffer;
 	ID3D11Buffer* constantCameraBuffer;
 	ConstantBufferD3D11 cameraPositionBuffer;
 
@@ -208,7 +207,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 	std::vector<Material> materialVector; // Use unique_ptr to manage memory automatically
-	Material** materialArray = new Material * [nrOfMeshes]; // MEMORY LEAK
 
 	std::vector<std::unique_ptr<ConstantBufferD3D11>> materialBufferVector; // Use unique_ptr to manage memory automatically
 
@@ -224,8 +222,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		materialVector.emplace_back(); // Store in unique_ptr to manage memory automatically
 		materialBufferVector.emplace_back(std::make_unique<ConstantBufferD3D11>()); // Store in unique_ptr to manage memory automatically
-
-		materialArray[i] = new Material; // MEMORY LEAK
 
 		// creats an empty mesh for each model loaded before it is loaded in pipeline helper
 		//meshArray[i] = new MeshD3D11; // MEMORY LEAK 
@@ -286,7 +282,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		constantWorldMatrixBuffer, constantViewProjMatrixBuffer, constantLightBuffer,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
-		samplerState, meshNames, WIDTH, HEIGHT, materialArray, uavTextureCube, mainCamera, cameraPositionBuffer,
+		samplerState, meshNames, WIDTH, HEIGHT, uavTextureCube, mainCamera, cameraPositionBuffer,
 		uniqueVBuffer, meshVector))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
