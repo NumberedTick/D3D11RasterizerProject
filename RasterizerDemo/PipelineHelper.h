@@ -101,45 +101,6 @@ struct PointLight
 	}
 };
 
-struct Material
-{
-	float ambientRGBA[4];
-	float diffuseRGBA[4];
-	float specularRGBA[4];
-	float ambientIntensity;
-	float specularPower;
-	float padding;
-	float padding2;
-
-	Material()
-	{
-		for (int i = 0; i < 4; ++i)
-		{
-			ambientRGBA[i] = 1.0f;
-			diffuseRGBA[i] = 1.0f;
-			specularRGBA[i] = 1.0f;
-		}
-
-		ambientIntensity = 1.0f;
-		padding = 0.0f;
-		specularPower = 1.0f;
-	}
-
-	Material(const std::array<float, 4>& otherAmbient, const std::array<float, 4>& otherDiffuse, const std::array<float, 4>& otherSpecular, const float& otherAmbientIntensity, const float& otherPadding, const float& otherSpecularPower)
-	{
-		for (int i = 0; i < 4; ++i)
-		{
-			ambientRGBA[i] = otherAmbient[i];
-			diffuseRGBA[i] = otherDiffuse[i];
-			specularRGBA[i] = otherSpecular[i];
-		}
-		
-		ambientIntensity = otherAmbientIntensity;
-		padding = otherPadding;
-		specularPower = otherSpecularPower;
-	}
-};
-
 
 template <typename T>
 class QuadTree

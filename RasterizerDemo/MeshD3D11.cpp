@@ -1,12 +1,14 @@
 #include "MeshD3D11.h"
 
 // Initialization function
-void MeshD3D11::Initialize(ID3D11Device* device, const MeshData& meshInfo)
+void MeshD3D11::Initialize(ID3D11Device* device, const MeshData& meshInfo, const Material& materialData)
 {
 	//SubMeshD3D11 subMesh;
 	this->meshData = meshInfo;
 	this->vertexBuffer.Initialize(device, this->meshData.vertexInfo.sizeOfVertex, this->meshData.vertexInfo.nrOfVerticesInBuffer, this->meshData.vertexInfo.vertexData);
 	this->indexBuffer.Initialize(device, this->meshData.indexInfo.nrOfIndicesInBuffer, this->meshData.indexInfo.indexData);
+	this->materialData = materialData;
+	this->materialBuffer.Initialize(device, sizeof(Material), &this->materialData);
 	//subMesh.Initialize(meshInfo.subMeshInfo[0].startIndexValue, meshInfo.subMeshInfo[0].nrOfIndicesInSubMesh, meshInfo.subMeshInfo[0].ambientTextureSRV, meshInfo.subMeshInfo[0].diffuseTextureSRV, meshInfo.subMeshInfo[0].specularTextureSRV);
 }
 
@@ -20,9 +22,9 @@ void MeshD3D11::PerformSubMeshDrawCall(ID3D11DeviceContext* context, size_t subM
 
 }
 
-void MeshD3D11::SetMaterialBuffer(ID3D11Buffer* materialBuffer)
+void MeshD3D11::SetMaterialBuffer(ConstantBufferD3D11&& materialBuffer)
 {
-	this->materialBuffer = materialBuffer;
+	this->materialBuffer = std::move(materialBuffer);
 }
 
 size_t MeshD3D11::GetNrOfSubMeshes() const
@@ -77,5 +79,5 @@ ID3D11Buffer* MeshD3D11::GetIndexBuffer() const
 
 ID3D11Buffer* MeshD3D11::GetMaterialBuffer() const
 {
-	return this->materialBuffer;
+	return this->materialBuffer.GetBuffer();
 }

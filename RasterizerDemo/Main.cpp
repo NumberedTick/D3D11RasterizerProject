@@ -27,9 +27,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	// Set buffers used in the rendering pipeline for the current mesh
 	ID3D11Buffer* meshVertexBuffer[] = { mesh->GetVertexBuffer()};
 	ID3D11Buffer* meshIndexBuffer[] = { mesh->GetIndexBuffer() };
-
-	// Litterally dont know how to remove this. HELP
-	ID3D11Buffer* materialBuffer = materialBufferArray->GetBuffer();
+	ID3D11Buffer* meshMaterialBuffer = mesh->GetMaterialBuffer();
 
 	immediateContext->IASetVertexBuffers(0, 1, meshVertexBuffer, &meshStride, &offset);
 	immediateContext->IASetIndexBuffer(mesh->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
@@ -41,7 +39,7 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->VSSetConstantBuffers(1, 1, &viewProjBuffers);
 	immediateContext->RSSetViewports(1, &viewport);
 	immediateContext->PSSetShader(pShader, nullptr, 0);
-	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
+	immediateContext->PSSetConstantBuffers(0, 1, &meshMaterialBuffer);
 	immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
 
 	immediateContext->DrawIndexed(mesh->GetNrOfIndices(), 0, 0);

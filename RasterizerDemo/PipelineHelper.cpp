@@ -331,7 +331,7 @@ bool CreateMaps(ID3D11Device* device, Material& material,  ConstantBufferD3D11*&
 	}
 	return true;
 }
-bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& material, std::unique_ptr<ConstantBufferD3D11>& materialConstantBuffer)
+bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& material)
 {
 
 	// Color values
@@ -347,10 +347,6 @@ bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& mate
 	// Creation of the material
 	material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
 
-	if (!tempCreateMaterialBuffer(device, materialConstantBuffer, material))
-	{
-		return false;
-	}
 	return true;
 }
 
@@ -397,7 +393,7 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 		meshData.indexInfo.nrOfIndicesInBuffer = indices.size();
 		meshData.indexInfo.indexData = indices.data();
 
-		if (!tempCreateMaps(device, objLoader, functionMaterial, materialConstantBuffer))
+		if (!tempCreateMaps(device, objLoader, functionMaterial))
 		{
 			return false;
 		}
@@ -410,11 +406,7 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 		// Handleing of the rest in mesdhData
 		meshData.modelName = meshNames[i];
 
-		meshVector[i]->Initialize(device, meshData);
-	
-
-		meshVector[i]->SetMaterialBuffer(materialConstantBuffer->GetBuffer());
-
+		meshVector[i]->Initialize(device, meshData, functionMaterial);
 
 	}
 	return true;

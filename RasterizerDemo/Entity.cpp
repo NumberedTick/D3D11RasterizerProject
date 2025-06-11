@@ -49,7 +49,7 @@ void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
 	this->worldMatrixBuffer.Initialize(device, sizeof(DirectX::XMFLOAT4X4), &worldMatrixFloat4x4);
 
 	// Initialize the mesh object
-	this->mesh.Initialize(device, meshData);
+	//this->mesh.Initialize(device, meshData);
 
 	// Assign the texture object
 	this->texture = textureObject;
