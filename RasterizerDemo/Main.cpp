@@ -17,19 +17,20 @@
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-			ID3D11PixelShader* pShader, ID3D11ComputeShader* cShader,ID3D11InputLayout* inputLayout, VertexBufferD3D11* vertexBuffer, 
-			IndexBufferD3D11* indexBuffer, ID3D11Buffer* tempConstantBuffer, ID3D11Buffer* viewProjBuffers, ID3D11Buffer* bufferArray[3], 
+			ID3D11PixelShader* pShader, ID3D11ComputeShader* cShader,ID3D11InputLayout* inputLayout, 
+			ID3D11Buffer* tempConstantBuffer, ID3D11Buffer* viewProjBuffers, ID3D11Buffer* bufferArray[3], 
 			ConstantBufferD3D11*& materialBufferArray, const unsigned int nrOfGBuffers, MeshD3D11* mesh)
 {
-	UINT stride = sizeof(SimpleVertex);
 	UINT meshStride = mesh->GetVertexSize();
-	int testStride = stride - meshStride;
 	UINT offset = 0;
-	//ID3D11Buffer* buffers[] = { vertexBuffer[0].GetBuffer()};
+
+	// Set buffers used in the rendering pipeline for the current mesh
 	ID3D11Buffer* meshVertexBuffer[] = { mesh->GetVertexBuffer()};
-	//ID3D11Buffer* indexBuffers[] = { indexBuffer[0].GetBuffer()};
 	ID3D11Buffer* meshIndexBuffer[] = { mesh->GetIndexBuffer() };
+
+	// Litterally dont know how to remove this. HELP
 	ID3D11Buffer* materialBuffer = materialBufferArray->GetBuffer();
+
 	immediateContext->IASetVertexBuffers(0, 1, meshVertexBuffer, &meshStride, &offset);
 	immediateContext->IASetIndexBuffer(mesh->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
 	immediateContext->IASetInputLayout(inputLayout);
@@ -43,7 +44,6 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 	immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
 	immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
 
-
 	immediateContext->DrawIndexed(mesh->GetNrOfIndices(), 0, 0);
 
 	immediateContext->VSSetConstantBuffers(0, 0, nullptr);
@@ -52,14 +52,12 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 
 void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
-	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer,
-	IndexBufferD3D11**& indexBuffer, CameraD3D11** cubeMapCameras,  ID3D11Buffer** worldMatrixBuffer,	ConstantBufferD3D11**& materialBufferArray, ID3D11UnorderedAccessView*& uav, 
+	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, CameraD3D11** cubeMapCameras,  
+	ID3D11Buffer** worldMatrixBuffer,	ConstantBufferD3D11**& materialBufferArray, ID3D11UnorderedAccessView*& uav, 
 	ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers, ID3D11ShaderResourceView**& srvMeshTextures, std::vector<std::unique_ptr<MeshD3D11>>& meshVector)
 {
 	
 	ID3D11RenderTargetView* nullRTV = nullptr;
-
-
 
 	immediateContext->IASetInputLayout(inputLayout);
 	immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -69,8 +67,6 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 	immediateContext->RSSetViewports(1, &viewport);
 
 
-
-	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
 
 
@@ -93,18 +89,21 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 
 		for (int k = 0; k < 4; ++k) {
 			if (k != 3) {
-				ID3D11Buffer* buffers[] = { uniqueVBuffer[k].get()->GetBuffer() };
+
+				// Set buffers used in the rendering pipeline for the current mesh
 				ID3D11Buffer* meshVertexBuffer[] = { meshVector[k].get()->GetVertexBuffer()};
-				ID3D11Buffer* indexBuffers[] = { indexBuffer[k][0].GetBuffer() };
-				immediateContext->IASetVertexBuffers(0, 1, meshVertexBuffer, &stride, &offset);
-				immediateContext->IASetIndexBuffer(*indexBuffers, DXGI_FORMAT_R32_UINT, 0);
+				UINT meshStride = meshVector[k].get()->GetVertexSize();
+				ID3D11Buffer* meshIndexBuffer =  meshVector[k].get()->GetIndexBuffer();
+
+				immediateContext->IASetVertexBuffers(0, 1, meshVertexBuffer, &meshStride, &offset);
+				immediateContext->IASetIndexBuffer(meshIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 				immediateContext->VSSetConstantBuffers(0, 1, &worldMatrixBuffer[k]);
 				immediateContext->PSSetShaderResources(0, 1, &srvMeshTextures[k]);
 				ID3D11Buffer* materialBuffer = materialBufferArray[k]->GetBuffer();
 				immediateContext->PSSetConstantBuffers(0, 1, &materialBuffer);
 				immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
-				immediateContext->DrawIndexed(indexBuffer[k][0].GetNrOfIndices(), 0, 0);
+				immediateContext->DrawIndexed(meshVector[k].get()->GetNrOfIndices(), 0, 0);
 			}
 		}
 
@@ -211,9 +210,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	textureNames.push_back("texture.jpg");
 
 
+	std::vector<Material> materialVector; // Use unique_ptr to manage memory automatically
 	Material** materialArray = new Material * [nrOfMeshes]; // MEMORY LEAK
 
 	ConstantBufferD3D11** materialBufferArray = new ConstantBufferD3D11 * [nrOfMeshes]; // MEMORY LEAK
+	std::vector<std::unique_ptr<ConstantBufferD3D11>> materialBufferVector; // Use unique_ptr to manage memory automatically
 
 	std::string missingTexture = "missing.jpg";
 	// Creates VertexBuffers for each model loaded (currently doing it manually)
@@ -221,16 +222,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	std::vector<std::unique_ptr<VertexBufferD3D11>> uniqueVBuffer;
 
 
-	IndexBufferD3D11** iBuffer = new IndexBufferD3D11 * [nrOfMeshes];
-
 	for (int i = 0; i < nrOfMeshes; ++i)
 	{
 		meshVector.emplace_back(std::make_unique<MeshD3D11>()); // Store in unique_ptr to manage memory automatically
 
-		uniqueVBuffer.emplace_back(std::make_unique<VertexBufferD3D11>()); // Store in unique_ptr to manage memory automatically
+		materialVector.emplace_back(); // Store in unique_ptr to manage memory automatically
+		materialBufferVector.emplace_back(std::make_unique<ConstantBufferD3D11>()); // Store in unique_ptr to manage memory automatically
 
-
-		iBuffer[i] = new IndexBufferD3D11;
 		materialArray[i] = new Material; // MEMORY LEAK
 		materialBufferArray[i] = new ConstantBufferD3D11; // MEMORY LEAK
 
@@ -289,7 +287,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 
-	if (!SetupPipeline(device, iBuffer, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, inputLayout, 
+	if (!SetupPipeline(device, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, inputLayout, 
 		constantWorldMatrixBuffer, constantViewProjMatrixBuffer, constantLightBuffer, constantMaterialBuffer,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
@@ -480,8 +478,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (DynamicCubeMapsEnabled)
 		{
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
-					cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, uniqueVBuffer, iBuffer,
-					cubeMapCameras, tempBufferArray, materialBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvMeshTextures, meshVector);
+					cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, cubeMapCameras, 
+				tempBufferArray, materialBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvMeshTextures, meshVector);
 		}
 
 		// Cleararing from last frame of main rendering
@@ -506,7 +504,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
-					uniqueVBuffer[i].get(), iBuffer[i], tempBufferArray[i], currentBuffer,
+					 tempBufferArray[i], currentBuffer,
 					bufferArray, materialBufferArray[i], nrOfGBuffers, meshVector[i].get());
 			}
 			
@@ -534,8 +532,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			immediateContext->PSSetConstantBuffers(1, 1, &bufferArray2[1]);
 			Render(immediateContext, rtvArr, dsView, dsState,
 				viewport, vShader, pShaderCubeMap, cShaderCubeMap, inputLayout,
-				uniqueVBuffer[3].get(), iBuffer[3], tempBufferArray[3], currentBuffer,
-				bufferArray, materialBufferArray[3], nrOfGBuffers, meshVector[3].get());
+				 tempBufferArray[3], currentBuffer, bufferArray, 
+				materialBufferArray[3], nrOfGBuffers, meshVector[3].get());
 			immediateContext->PSSetConstantBuffers(1, 0, nullptr);
 		}
 
@@ -633,12 +631,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	samplerState->Release();
 	for (int i = 0; i < nrOfMeshes; ++i)
 	{
-		delete iBuffer[i];
 		meshTextures[i]->Release();
 		srvMeshTextures[i]->Release();
 	}
 
-	delete[] iBuffer;
 	delete[] meshTextures;
 	delete[] srvMeshTextures;
 

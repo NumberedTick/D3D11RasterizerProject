@@ -185,36 +185,6 @@ bool LoadObj(std::string& modleName, objl::Loader& objLoader)
 	}
 }
 
-bool LoadVertexs(std::string& modleName, std::vector<SimpleVertex>& modelVertexes) 
-{
-
-	// remove later
-	objl::Loader objLoader;
-	if (!LoadObj(modleName, objLoader))
-	{
-		return false;
-	}
-
-	for (int j = 0; j < objLoader.LoadedMeshes.size(); ++j)
-	{
-		for (int k = 0; k < objLoader.LoadedMeshes[j].Vertices.size(); ++k) {
-			SimpleVertex Vertex;
-			Vertex.pos[0] = objLoader.LoadedVertices[k].Position.X;
-			Vertex.pos[1] = objLoader.LoadedVertices[k].Position.Y;
-			Vertex.pos[2] = objLoader.LoadedVertices[k].Position.Z;
-
-			Vertex.norm[0] = -objLoader.LoadedVertices[k].Normal.X;
-			Vertex.norm[1] = -objLoader.LoadedVertices[k].Normal.Y;
-			Vertex.norm[2] = -objLoader.LoadedVertices[k].Normal.Z;
-
-			Vertex.UV[0] = objLoader.LoadedVertices[k].TextureCoordinate.X;
-			Vertex.UV[1] = objLoader.LoadedVertices[k].TextureCoordinate.Y;
-
-			modelVertexes.push_back(Vertex);
-		}
-	}
-	return true;
-}
 
 bool tempLoadVertexs(objl::Loader objLoader, std::vector<SimpleVertex>& modelVertexes)
 {
@@ -236,25 +206,6 @@ bool tempLoadVertexs(objl::Loader objLoader, std::vector<SimpleVertex>& modelVer
 			modelVertexes.push_back(Vertex);
 		}
 	}
-	return true;
-}
-
-bool LoadIndices(std::string& modleName, std::vector<unsigned int>& indices)
-{
-	// remove later
-	objl::Loader objLoader;
-	if (!LoadObj(modleName, objLoader))
-	{
-		return false;
-	}
-
-	// Loads indices into a vector
-	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
-	{
-		indices.push_back(objLoader.LoadedIndices[i]);
-
-	}
-
 	return true;
 }
 
@@ -358,13 +309,8 @@ bool tempCreateMaterialBuffer(ID3D11Device* device, std::unique_ptr<ConstantBuff
 	return true;
 }
 
-bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName, ConstantBufferD3D11*& materialConstantBuffer)
+bool CreateMaps(ID3D11Device* device, Material& material,  ConstantBufferD3D11*& materialConstantBuffer, objl::Loader objLoader)
 {
-	objl::Loader objLoader;
-	if (!LoadObj(modleName, objLoader))
-	{
-		return false;
-	}
 
 	// Color values
 	std::array<float, 4> ambientColor = { objLoader.LoadedMaterials[0].Ka.X, objLoader.LoadedMaterials[0].Ka.Y, objLoader.LoadedMaterials[0].Ka.Z, 1.0f };
@@ -385,7 +331,6 @@ bool CreateMaps(ID3D11Device* device, Material& material, std::string& modleName
 	}
 	return true;
 }
-
 bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& material, std::unique_ptr<ConstantBufferD3D11>& materialConstantBuffer)
 {
 
@@ -414,7 +359,8 @@ bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& mate
 // paramiters (device, meshNames, MaterialArray)
 //
 
-bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::vector<std::unique_ptr<MeshD3D11>>& meshVector)
+// REMOVE "Material**& materialArray, ConstantBufferD3D11**& materialBufferArray" AFTER ADDING THE MESHD3D11 MATERIAL BUFFER INTERNAL 
+bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::vector<std::unique_ptr<MeshD3D11>>& meshVector, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray)
 {
 	for (int i = 0; i < meshNames.size(); i++)
 	{
@@ -456,6 +402,10 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 			return false;
 		}
 
+		if (!CreateMaps(device, *materialArray[i], materialBufferArray[i], objLoader))
+		{
+			return false;
+		}
 
 		// Handleing of the rest in mesdhData
 		meshData.modelName = meshNames[i];
@@ -465,66 +415,8 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 
 		meshVector[i]->SetMaterialBuffer(materialConstantBuffer->GetBuffer());
 
-		
+
 	}
-	return true;
-}
-
-
-
-
-// Creation of the Vertex Buffer
-bool CreateVertexBuffer(ID3D11Device* device, std::vector<std::string>& modelNames, Material**& materialArray, ConstantBufferD3D11**& materialBufferArray, std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer)
-{
-	
-	for (int i = 0; i < modelNames.size(); i++) 
-	{
-		std::vector<SimpleVertex> Vertices;
-
-
-
-		if (!LoadVertexs(modelNames[i], Vertices))
-		{
-			return false;
-		}
-
-		if (!CreateMaps(device, *materialArray[i], modelNames[i], materialBufferArray[i]))
-		{
-			return false;
-		}
-
-		uniqueVBuffer[i]->Initialize(device, sizeof(SimpleVertex), Vertices.size(), Vertices.data());
-		
-		if (uniqueVBuffer[i]->GetBuffer() == nullptr)
-		{
-			return false;
-		}
-		
-	}
-
-	return true;
-}
-
-bool CreateIndexBuffer(ID3D11Device* device, IndexBufferD3D11**& testIndexBuffer, std::vector<std::string>& modelNames)
-{
-	std::vector<unsigned int> indices;
-
-	for (int i = 0; i < modelNames.size(); i++)
-	{
-		if (!LoadIndices(modelNames[i], indices))
-		{
-			return false;
-		}
-
-		testIndexBuffer[i]->Initialize(device, indices.size(), indices.data());
-
-		if (testIndexBuffer[i]->GetBuffer() == nullptr)
-		{
-			return false;
-		}
-	}
-	
-
 	return true;
 }
 
@@ -846,7 +738,7 @@ enum TEXTURE_CUBE_FACE_INDEX
 };
 
 
-bool SetupPipeline(ID3D11Device* device, IndexBufferD3D11**& indexBuffer,  ID3D11VertexShader*& vShader,
+bool SetupPipeline(ID3D11Device* device,  ID3D11VertexShader*& vShader,
 	ID3D11PixelShader*& pShader, ID3D11PixelShader*& pShaderCubeMap, ID3D11ComputeShader*& cShader , ID3D11ComputeShader*& cShaderCubeMap ,ID3D11InputLayout*& inputLayout, ID3D11Buffer*& constantWorldMatrixBuffer, ID3D11Buffer*& constantViewProjMatrixBuffer,
 	ID3D11Buffer*& constantLightBuffer, ID3D11Buffer*& constantMaterialBuffer, ID3D11Buffer*& constantCameraBuffer, 
 	ID3D11DeviceContext*& deviceContext, ID3D11Texture2D*& cubeMapTexture, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11ShaderResourceView*& cubeMapSrv, 
@@ -880,21 +772,8 @@ bool SetupPipeline(ID3D11Device* device, IndexBufferD3D11**& indexBuffer,  ID3D1
 		std::cerr << "Error creating constant buffer for View and Projection Matrix in Vertex shader!" << std::endl;
 		return false;
 	}
-
-
-	if (!CreateVertexBuffer(device, modelNames, materialArray, materialBufferArray, uniqueVBuffer))
-	{
-		std::cerr << "Error creating vertex buffer!" << std::endl;
-		return false;
-	}
 	
-	if (!CreateIndexBuffer(device, indexBuffer, modelNames))
-	{
-		std::cerr << "Error creating index buffer!" << std::endl;
-		return false;
-	}
-	
-	if (!CreateMesh(device, modelNames, meshVector))
+	if (!CreateMesh(device, modelNames, meshVector, materialArray, materialBufferArray))
 	{
 		std::cerr << "Error creating meshes!" << std::endl;
 		return false;
