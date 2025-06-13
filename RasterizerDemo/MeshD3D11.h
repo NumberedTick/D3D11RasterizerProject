@@ -6,7 +6,6 @@
 #include <d3d11_4.h>
 
 #include "SubMeshD3D11.h"
-//#include "PipelineHelper.h"
 #include "VertexBufferD3D11.h"
 #include "IndexBufferD3D11.h"
 #include "ConstantBufferD3D11.h"
@@ -90,10 +89,6 @@ private:
 
 	Material materialData;
 	ConstantBufferD3D11 materialBuffer;
-
-
-
-	//ID3D11Buffer* materialBuffer = nullptr;
 
 public:
 	MeshD3D11() = default;

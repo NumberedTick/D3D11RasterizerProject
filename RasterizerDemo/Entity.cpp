@@ -1,16 +1,11 @@
 #include "Entity.h"
-#include "MeshD3D11.h"
-#include "ShaderResourceTextureD3D11.h"
-#include "TextureD3D11.h"
 #include "DirectXMath.h"
-#include "ConstantBufferD3D11.h"
-#include "PipelineHelper.h"
 
 
 
 void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
-	const DirectX::XMFLOAT3& roation, const DirectX::XMFLOAT3& scale,
-	const MeshData& meshData, const TextureD3D11& textureObject, bool isCubeMap)
+	const DirectX::XMFLOAT3& roation, const DirectX::XMFLOAT3& scale, const std::string& meshName, 
+	const std::map<std::string, UINT>& meshIDMap, bool isCubeMap)
 {
 	/*
 	* Function Flow
@@ -20,7 +15,8 @@ void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
 	* Generate a temporary world matrix
 	* Turn the world matrix into a ConstantBufferD3D11 object
 	* 
-	* Initilize a mesh object from meshData
+	* Take in the name of a mesh and assign it the meshID from the meshID map
+	* Used to call upon the id of the mesh in the meshvector instead of storing the entire mesh inside of the entity to save memory
 	* 
 	* Save the given TextureD3D11 object from the paramiters (change current paramiters)
 	* 
@@ -50,24 +46,18 @@ void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
 
 	// Initialize the mesh object
 	//this->mesh.Initialize(device, meshData);
+	this->meshID = meshIDMap.at(meshName); // Sets meshID to the ID of the mesh with the given name
 
 	// Assign the texture object
-	this->texture = textureObject;
 	
 	// Create the bounding box from the meshData
-	DirectX::BoundingBox entityBoundingBox;
 	//entityBoundingBox.CreateFromPoints(entityBoundingBox, meshData.vertexInfo.nrOfVerticesInBuffer, meshData.vertexInfo.vertexData, sizeof(SimpleVertex));
+
+	this->cubeMap = isCubeMap;
 }
 
 
 bool Entity::isCubeMap() const
 {
 	return this->cubeMap;
-}
-
-
-DirectX::BoundingBox& Entity::setBoundingBox(DirectX::BoundingBox& boundingBox)
-{
-	this->boundngBox = boundingBox;
-	return this->boundngBox;
 }

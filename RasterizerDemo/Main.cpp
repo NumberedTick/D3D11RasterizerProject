@@ -5,6 +5,7 @@
 #include <chrono>
 #include <vector>
 #include <DirectXCollision.h>
+#include <map>
 
 #include "WindowHelper.h"
 #include "D3D11Helper.h"
@@ -186,24 +187,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Loads meshes into the scene
 	std::vector<std::string> meshNames;
 
-
-	meshNames.push_back("roomHoles.obj");
-	meshNames.push_back("untitled.obj");
-	meshNames.push_back("torus.obj");
-
-	//meshNames.push_back("monkey.obj");
-	meshNames.push_back("smoothSphere.obj");
+	meshNames = {
+		"roomHoles.obj",
+		"untitled.obj",
+		"torus.obj",
+		"smoothSphere.obj"
+	};
 
 	UINT nrOfMeshes = static_cast<UINT>(meshNames.size());
 
 	std::vector<std::unique_ptr<MeshD3D11>> meshVector; // Use unique_ptr to manage memory automatically
 
+	std::map<std::string, UINT> meshIDMap; // Map to store mesh names and their IDs
+
 	// Loads textures
 
 	std::vector<std::string> textureNames;
-	textureNames.push_back("torus.png");
-	textureNames.push_back("texture2.png");
-	textureNames.push_back("texture.jpg");
+
+	textureNames = {
+		"torus.png",
+		"texture2.png",
+		"texture.jpg",
+	};
 
 
 	std::vector<Material> materialVector; // Use unique_ptr to manage memory automatically
@@ -216,6 +221,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	std::vector<std::unique_ptr<VertexBufferD3D11>> uniqueVBuffer;
 
 
+	std::vector<std::unique_ptr<Entity>> entityVector; // Use unique_ptr to manage memory automatically
+
 	for (int i = 0; i < nrOfMeshes; ++i)
 	{
 		meshVector.emplace_back(std::make_unique<MeshD3D11>()); // Store in unique_ptr to manage memory automatically
@@ -223,8 +230,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		materialVector.emplace_back(); // Store in unique_ptr to manage memory automatically
 		materialBufferVector.emplace_back(std::make_unique<ConstantBufferD3D11>()); // Store in unique_ptr to manage memory automatically
 
-		// creats an empty mesh for each model loaded before it is loaded in pipeline helper
-		//meshArray[i] = new MeshD3D11; // MEMORY LEAK 
+		// Fill entity vector with the same number of meshes to just start Rendering with entites REMOVE LATER
+		entityVector.emplace_back(std::make_unique<Entity>());
 
 	}
 
@@ -283,7 +290,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
 		samplerState, meshNames, WIDTH, HEIGHT, uavTextureCube, mainCamera, cameraPositionBuffer,
-		uniqueVBuffer, meshVector))
+		uniqueVBuffer, meshVector, meshIDMap))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -325,6 +332,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		
 	}
+
+	XMFLOAT3 entityPos = { 0.0f, 0.0f, 0.0f };
+	XMFLOAT3 entityPos2 = { 0.0f, 0.0f, -2.0f };
+	XMFLOAT3 entityRot = { 0.0f, 0.0f, 0.0f };
+	XMFLOAT3 entityScale = { 1.0f, 1.0f, 1.0f };
+	XMFLOAT3 entityScale2 = { 0.5f, 0.5f, 0.5f };
+
+	XMFLOAT3 cubeMapPos = {0.0f, 0.0f, -0.5f };
+	XMFLOAT3 cubeMapRot = { 0.0f, XM_PIDIV2, 0.0f };
+
+	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, false);
+	entityVector[1].get()->Initialize(device, entityPos2, entityRot, entityScale, "torus.obj", meshIDMap, false);
+	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "roomHoles.obj", meshIDMap, false);
+	entityVector[3].get()->Initialize(device, cubeMapPos, cubeMapRot, entityScale, "smoothSphere.obj", meshIDMap, true);
+
 	// create entities and assign index buffer ID, vertex buffer ID, Texture ID, modle name, texture name, 
 
 	MSG msg = { };

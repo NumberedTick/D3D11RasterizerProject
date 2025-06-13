@@ -356,7 +356,7 @@ bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& mate
 //
 
 // REMOVE "Material**& materialArray, ConstantBufferD3D11**& materialBufferArray" AFTER ADDING THE MESHD3D11 MATERIAL BUFFER INTERNAL 
-bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::vector<std::unique_ptr<MeshD3D11>>& meshVector)
+bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::map<std::string, UINT>& meshIDMap)
 {
 	for (int i = 0; i < meshNames.size(); i++)
 	{
@@ -401,9 +401,13 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 		// Handleing of the rest in mesdhData
 		meshData.modelName = meshNames[i];
 
+		// Initilizes eash mesh in the meshVector
 		meshVector[i]->Initialize(device, meshData, functionMaterial);
 
+		// Store the meshID in the map for locating the meshID based on the name
+		meshIDMap[meshNames[i]] = i; 
 	}
+
 	return true;
 }
 
@@ -732,7 +736,7 @@ bool SetupPipeline(ID3D11Device* device,  ID3D11VertexShader*& vShader,
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, 
 	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer, 
-	std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer, std::vector<std::unique_ptr<MeshD3D11>>& meshVector)
+	std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer, std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::map<std::string, UINT>& meshIDMap)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, vShaderByteCode))
@@ -760,7 +764,7 @@ bool SetupPipeline(ID3D11Device* device,  ID3D11VertexShader*& vShader,
 		return false;
 	}
 	
-	if (!CreateMesh(device, modelNames, meshVector))
+	if (!CreateMesh(device, modelNames, meshVector, meshIDMap))
 	{
 		std::cerr << "Error creating meshes!" << std::endl;
 		return false;
