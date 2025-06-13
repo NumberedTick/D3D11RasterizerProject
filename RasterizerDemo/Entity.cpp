@@ -61,3 +61,9 @@ bool Entity::isCubeMap() const
 {
 	return this->cubeMap;
 }
+
+UINT Entity::getMeshID() const
+{
+	return this->meshID;
+}
+

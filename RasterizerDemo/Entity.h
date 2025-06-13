@@ -50,7 +50,7 @@ public:
 	//ShaderResourceTextureD3D11 getTextureSRV() const;
 	ID3D11Buffer* getMaterialBuffer() const;
 	bool isCubeMap() const;
-	int getModelID() const;
+	UINT getMeshID() const;
 	int getTextureID() const;
 	DirectX::BoundingBox& getBoundingBox() const;
 

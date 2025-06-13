@@ -52,7 +52,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, CameraD3D11** cubeMapCameras,  
 	ID3D11Buffer** worldMatrixBuffer, ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers, 
-	ID3D11ShaderResourceView**& srvMeshTextures, std::vector<std::unique_ptr<MeshD3D11>>& meshVector)
+	ID3D11ShaderResourceView**& srvMeshTextures, std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::vector<std::unique_ptr<Entity>>& entityVector)
 {
 	
 	ID3D11RenderTargetView* nullRTV = nullptr;
@@ -66,6 +66,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 
 
 	UINT offset = 0;
+	UINT meshRenderID = -1;
 
 
 	float clearColour[4] = { 0, 0, 0, 0 };
@@ -86,13 +87,14 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		ID3D11Buffer* currentBuffer = cubeMapCameras[i]->GetConstantBuffer();
 
 		for (int k = 0; k < 4; ++k) {
-			if (k != 3) {
+			meshRenderID = entityVector[k].get()->getMeshID();
+			if (!entityVector[k].get()->isCubeMap()) {
 
 				// Set buffers used in the rendering pipeline for the current mesh
-				UINT meshStride = meshVector[k].get()->GetVertexSize();
-				ID3D11Buffer* meshVertexBuffer[] = { meshVector[k].get()->GetVertexBuffer() };
-				ID3D11Buffer* meshIndexBuffer =  meshVector[k].get()->GetIndexBuffer();
-				ID3D11Buffer* meshMaterialBuffer = meshVector[k].get()->GetMaterialBuffer();
+				UINT meshStride = meshVector[meshRenderID].get()->GetVertexSize();
+				ID3D11Buffer* meshVertexBuffer[] = { meshVector[meshRenderID].get()->GetVertexBuffer() };
+				ID3D11Buffer* meshIndexBuffer =  meshVector[meshRenderID].get()->GetIndexBuffer();
+				ID3D11Buffer* meshMaterialBuffer = meshVector[meshRenderID].get()->GetMaterialBuffer();
 
 				immediateContext->IASetVertexBuffers(0, 1, meshVertexBuffer, &meshStride, &offset);
 				immediateContext->IASetIndexBuffer(meshIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
@@ -101,7 +103,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 				immediateContext->PSSetConstantBuffers(0, 1, &meshMaterialBuffer);
 				immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
-				immediateContext->DrawIndexed(meshVector[k].get()->GetNrOfIndices(), 0, 0);
+				immediateContext->DrawIndexed(meshVector[meshRenderID].get()->GetNrOfIndices(), 0, 0);
 			}
 		}
 
@@ -344,7 +346,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, false);
 	entityVector[1].get()->Initialize(device, entityPos2, entityRot, entityScale, "torus.obj", meshIDMap, false);
-	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "roomHoles.obj", meshIDMap, false);
+	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "torus.obj", meshIDMap, false);
 	entityVector[3].get()->Initialize(device, cubeMapPos, cubeMapRot, entityScale, "smoothSphere.obj", meshIDMap, true);
 
 	// create entities and assign index buffer ID, vertex buffer ID, Texture ID, modle name, texture name, 
@@ -353,7 +355,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	XMFLOAT4X4 float4x4Array[3];
 
-
+	int cubeMapIndex = -1;
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 
@@ -450,6 +452,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Start time for the time to render a frame
 		auto startTime = std::chrono::high_resolution_clock::now();
 
+
+		// Check to see what entities will be rendered (going to add frustum culling and quadtree to this later)
+		for (int i = 0; i < entityVector.size(); ++i)
+		{
+			if (entityVector[i].get()->isCubeMap()) 
+			{
+				cubeMapIndex = i;
+			}
+
+		}
+
+
 		// creation of the new world matrix for the rotation
 		newWorldMatrix = CreateWorldMatrix(rotationAmount, xDist, yDist, zDist);
 		XMStoreFloat4x4(&float4x4Array[0], newWorldMatrix);
@@ -492,7 +506,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
 					cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, cubeMapCameras, 
-				tempBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvMeshTextures, meshVector);
+				tempBufferArray, uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvMeshTextures, meshVector, entityVector);
 		}
 
 		// Cleararing from last frame of main rendering
@@ -511,13 +525,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// Gemoetry pass
 		for (int i = 0; i < nrOfMeshes; ++i)
 		{
-			if (i != 3) 
+			if (i != cubeMapIndex) 
 			{
 				immediateContext->PSSetShaderResources(0, 1, &srvMeshTextures[i]);
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
-					 tempBufferArray[i], currentBuffer, nrOfGBuffers, meshVector[i].get());
+					 tempBufferArray[i], currentBuffer, nrOfGBuffers, meshVector[entityVector[i].get()->getMeshID()].get());
 			}
 			
 		}
@@ -539,12 +553,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		immediateContext->CSSetShader(nullptr, nullptr, NULL);
 
 		// Forward rendering off cubemap
-		if (DynamicCubeMapsEnabled) {
+		if (DynamicCubeMapsEnabled and cubeMapIndex >= 0) {
 			immediateContext->PSSetShaderResources(0, 1, &cubeMapSrv);
 			immediateContext->PSSetConstantBuffers(1, 1, &bufferArray2[1]);
 			Render(immediateContext, rtvArr, dsView, dsState,
 				viewport, vShader, pShaderCubeMap, cShaderCubeMap, inputLayout,
-				 tempBufferArray[3], currentBuffer, nrOfGBuffers, meshVector[3].get());
+				tempBufferArray[3], currentBuffer, nrOfGBuffers, meshVector[entityVector[cubeMapIndex].get()->getMeshID()].get());
 			immediateContext->PSSetConstantBuffers(1, 0, nullptr);
 		}
 
