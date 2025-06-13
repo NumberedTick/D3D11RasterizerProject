@@ -33,6 +33,66 @@ void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
 	this->rotation = roation;
 	this->scale = scale;
 
+	DirectX::XMFLOAT4X4 worldMatrixFloat4x4 = this->SetWorldMatrix(); // Generate the world matrix and store it in a XMFLOAT4X4 object
+	
+	this->worldMatrixBuffer = ConstantBufferD3D11(device, sizeof(DirectX::XMFLOAT4X4), &worldMatrixFloat4x4);
+
+	// Initialize the mesh object
+	this->meshID = meshIDMap.at(meshName); // Sets meshID to the ID of the mesh with the given name
+
+	// Assign the texture object
+	
+	// Create the bounding box from the meshData
+	//entityBoundingBox.CreateFromPoints(entityBoundingBox, meshData.vertexInfo.nrOfVerticesInBuffer, meshData.vertexInfo.vertexData, sizeof(SimpleVertex));
+
+	this->cubeMap = isCubeMap;
+	this->initialized = true; // Set the initialized boolean to true. Used to be able to create more entites but not initilize them or try to render them
+}
+
+
+ID3D11Buffer* Entity::getWorldMatrixBuffer() const
+{
+	return this->worldMatrixBuffer.GetBuffer();
+}
+
+bool Entity::isCubeMap() const
+{
+	return this->cubeMap;
+}
+
+bool Entity::isInitialized() const
+{
+	return this->initialized;
+}
+
+UINT Entity::getMeshID() const
+{
+	return this->meshID;
+}
+
+void Entity::SetPosition(const DirectX::XMFLOAT3& pos)
+{
+	this->position = pos;
+}
+
+void Entity::SetRotation(const DirectX::XMFLOAT3& rot)
+{
+	this->rotation = rot;
+}
+
+void Entity::SetScale(const DirectX::XMFLOAT3& scale)
+{
+	this->scale = scale;
+}
+
+void Entity::UpdateInternalConstantBuffer(ID3D11DeviceContext* context)
+{
+	DirectX::XMFLOAT4X4 data = this->SetWorldMatrix();
+	this->worldMatrixBuffer.UpdateBuffer(context, &data);
+}
+
+DirectX::XMFLOAT4X4 Entity::SetWorldMatrix()
+{
 	// Generating the matrices that make up the world matrix
 	DirectX::XMMATRIX transformationMatrix = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
 	DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
@@ -42,28 +102,6 @@ void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
 	DirectX::XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * transformationMatrix;
 	DirectX::XMFLOAT4X4 worldMatrixFloat4x4;
 	DirectX::XMStoreFloat4x4(&worldMatrixFloat4x4, worldMatrix);
-	this->worldMatrixBuffer.Initialize(device, sizeof(DirectX::XMFLOAT4X4), &worldMatrixFloat4x4);
-
-	// Initialize the mesh object
-	//this->mesh.Initialize(device, meshData);
-	this->meshID = meshIDMap.at(meshName); // Sets meshID to the ID of the mesh with the given name
-
-	// Assign the texture object
-	
-	// Create the bounding box from the meshData
-	//entityBoundingBox.CreateFromPoints(entityBoundingBox, meshData.vertexInfo.nrOfVerticesInBuffer, meshData.vertexInfo.vertexData, sizeof(SimpleVertex));
-
-	this->cubeMap = isCubeMap;
-}
-
-
-bool Entity::isCubeMap() const
-{
-	return this->cubeMap;
-}
-
-UINT Entity::getMeshID() const
-{
-	return this->meshID;
+	return worldMatrixFloat4x4;
 }
 

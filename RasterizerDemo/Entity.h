@@ -31,6 +31,7 @@ private:
 	//DirectX::BoundingBox boundngBox;
 
 	bool cubeMap = false;
+	bool initialized = false;
 
 public:
 	Entity() = default;
@@ -49,13 +50,26 @@ public:
 	std::string getTextureName() const;
 	//ShaderResourceTextureD3D11 getTextureSRV() const;
 	ID3D11Buffer* getMaterialBuffer() const;
+	ID3D11Buffer* getWorldMatrixBuffer() const;
 	bool isCubeMap() const;
+	bool isInitialized() const;
 	UINT getMeshID() const;
 	int getTextureID() const;
 	DirectX::BoundingBox& getBoundingBox() const;
+	
+	void UpdateInternalConstantBuffer(ID3D11DeviceContext* context);
 
-	int setModelID(int id);
+	void SetPosition(const DirectX::XMFLOAT3& pos);
+
+	void SetRotation(const DirectX::XMFLOAT3& rot);
+
+	void SetScale(const DirectX::XMFLOAT3& scale);
+
+	void setModelID(int id);
 	int setTextureID(int id);
+	
+	
+	DirectX::XMFLOAT4X4 SetWorldMatrix();
 	DirectX::BoundingBox& setBoundingBox(DirectX::BoundingBox& boundingBox);
 
 	//void performDrawCall(ID3D11DeviceContext* context) const;
