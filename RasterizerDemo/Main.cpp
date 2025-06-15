@@ -52,8 +52,8 @@ void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvA
 void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 	ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
 	ID3D11PixelShader* pShader, ID3D11ComputeShader* cShaderCubeMap, ID3D11UnorderedAccessView**& cubeMapUavArray,ID3D11InputLayout* inputLayout, CameraD3D11** cubeMapCameras,  
-	ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers,	ID3D11ShaderResourceView**& srvMeshTextures, 
-	std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::vector<std::unique_ptr<Entity>>& entityVector)
+	ID3D11UnorderedAccessView*& uav, ID3D11ShaderResourceView** gBufferCubeMapSRV, const unsigned int nrOfGBuffers,
+	std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::vector<std::unique_ptr<Entity>>& entityVector, std::vector<std::unique_ptr<ShaderResourceTextureD3D11>>& textureVector)
 {
 	
 	ID3D11RenderTargetView* nullRTV = nullptr;
@@ -68,6 +68,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 
 	UINT offset = 0;
 	UINT meshRenderID = -1;
+	UINT textureRenderID = -1;
 
 
 	float clearColour[4] = { 0, 0, 0, 0 };
@@ -89,6 +90,8 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 
 		for (int k = 0; k < 4; ++k) {
 			meshRenderID = entityVector[k].get()->getMeshID();
+			textureRenderID = entityVector[k].get()->getTextureID();
+
 			if (!entityVector[k].get()->isCubeMap() and entityVector[k].get()->isInitialized()) {
 
 				// Set buffers used in the rendering pipeline for the current mesh
@@ -97,11 +100,12 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 				ID3D11Buffer* meshIndexBuffer =  meshVector[meshRenderID].get()->GetIndexBuffer();
 				ID3D11Buffer* meshMaterialBuffer = meshVector[meshRenderID].get()->GetMaterialBuffer();
 				ID3D11Buffer* entityWorldMatrixBuffer = entityVector[k].get()->getWorldMatrixBuffer();
+				ID3D11ShaderResourceView* textureSRV = textureVector[textureRenderID].get()->GetSRV();
 
 				immediateContext->IASetVertexBuffers(0, 1, meshVertexBuffer, &meshStride, &offset);
 				immediateContext->IASetIndexBuffer(meshIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 				immediateContext->VSSetConstantBuffers(0, 1, &entityWorldMatrixBuffer);
-				immediateContext->PSSetShaderResources(0, 1, &srvMeshTextures[k]);
+				immediateContext->PSSetShaderResources(0, 1, &textureSRV);
 				immediateContext->PSSetConstantBuffers(0, 1, &meshMaterialBuffer);
 				immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				immediateContext->OMSetRenderTargets(nrOfGBuffers, rtvArr, dsView);
@@ -205,14 +209,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	std::map<std::string, UINT> meshIDMap; // Map to store mesh names and their IDs
 
 	// Loads textures
-
-	std::vector<std::string> textureNames;
-
-	textureNames = {
-		"torus.png",
-		"texture2.png",
-		"texture.jpg"
-	};	
 	
 	std::vector<std::string> textureNames2;
 
@@ -318,47 +314,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 	
 
-	// Creation of the needed textures for each model
-	ID3D11Texture2D** meshTextures = new ID3D11Texture2D* [nrOfMeshes];
-	ID3D11ShaderResourceView** srvMeshTextures = new ID3D11ShaderResourceView* [nrOfMeshes];
-	for (int i = 0; i < nrOfMeshes; ++i)
-	{
-		if (i < textureNames.size()) 
-		{
-			if (!Create2DTexture(device, meshTextures[i], textureNames[i]))
-			{
-				std::cerr << "Failed to create 2DTexture for model!" << std::endl;
-				return -1;
-			}
-
-			if (!CreateSRV(device, meshTextures[i], srvMeshTextures[i]))
-			{
-				std::cerr << "Failed to create SRV for model texture!" << std::endl;
-				return -1;
-			}
-		}
-		else // only used to create missing texture if there are more models than textures,
-		{
-			if (!Create2DTexture(device, meshTextures[i], missingTexture))
-			{
-				std::cerr << "Failed to create 2DTexture for missing texture!" << std::endl;
-				return -1;
-			}
-
-			if (!CreateSRV(device, meshTextures[i], srvMeshTextures[i]))
-			{
-				std::cerr << "Failed to create SRV for model texture!" << std::endl;
-				return -1;
-			}
-		}
-		
-	}
-
 	XMFLOAT3 entityPos = { 0.0f, 0.0f, -0.5f };
 	XMFLOAT3 entityPos2 = { 0.0f, 0.0f, -2.0f };
 	XMFLOAT3 entityPos3 = { 0.0f, 0.0f, -3.5f };
 
-	XMFLOAT3 entityRot = { XM_PIDIV4, 0.0f, 0.0f };
+	XMFLOAT3 entityRot = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT3 entityScale = { 1.0f, 1.0f, 1.0f };
 	XMFLOAT3 entityScale2 = { 0.5f, 0.5f, 0.5f };
 	XMFLOAT3 entityScale3 = { 0.5f, 0.5f, 1.5f };
@@ -530,7 +490,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			RenderReflectivObject(immediateContext, cubeMapRtvGBufferArr, cubeMapDSView, cubeMapDSState,
 					cubeMapViewport, vShader, pShader, cShaderCubeMap, cubeMapUavArray, inputLayout, cubeMapCameras, 
-				 uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, srvMeshTextures, meshVector, entityVector);
+				 uavTextureCube, gBufferCubeMapSRV, nrOfGBuffers, meshVector, entityVector, textureVector);
 		}
 
 		// Cleararing from last frame of main rendering
@@ -685,14 +645,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	delete[] gBufferSrv;
 
 	samplerState->Release();
-	for (int i = 0; i < nrOfMeshes; ++i)
-	{
-		meshTextures[i]->Release();
-		srvMeshTextures[i]->Release();
-	}
-
-	delete[] meshTextures;
-	delete[] srvMeshTextures;
 
 	for (int i = 0; i < 6; ++i)
 	{

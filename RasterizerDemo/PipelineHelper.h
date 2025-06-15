@@ -122,8 +122,6 @@ XMMATRIX CreateWorldMatrix(float angle, float xDist, float yDist, float zDist);
 
 XMMATRIX CreatViewPerspectiveMatrix(XMVECTOR viewVector, XMVECTOR upDirection, XMVECTOR eyePosition, float fovAngleY, float aspectRatio, float nearZ, float farZ);
 
-bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture, std::string textureName);
-
 bool CreateSRV(ID3D11Device* device, ID3D11Texture2D*& texture, ID3D11ShaderResourceView*& srv);
 
 bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11RenderTargetView*& gBufferRtv, ID3D11ShaderResourceView*& gBufferSrv, UINT width, UINT height);

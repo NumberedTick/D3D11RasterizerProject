@@ -383,7 +383,7 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 }
 
 // New function for creating a 2D texture using the texture vector
-bool newCreate2DTexture(ID3D11Device* device, std::vector<std::string>& textureNames, 
+bool Create2DTexture(ID3D11Device* device, std::vector<std::string>& textureNames, 
 	std::vector<std::unique_ptr<ShaderResourceTextureD3D11>>& textureResoursesVector, std::map<std::string, UINT>& textureIDMap)
 {
 	for (int i = 0; i < textureNames.size(); ++i)
@@ -402,41 +402,6 @@ bool newCreate2DTexture(ID3D11Device* device, std::vector<std::string>& textureN
 	return true;
 }
 
-bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture, std::string textureName) 
-{
-	// Loading the texture
-
-	int textureWidth, textureHeight, numChannels;
-	unsigned char* imageData = stbi_load(textureName.c_str(), &textureWidth, &textureHeight, &numChannels, 4);
-	
-	// Creating nesicary sampler for the texture 2d desc
-	DXGI_SAMPLE_DESC TextureSampleDesc;
-	TextureSampleDesc.Count = 1;
-	TextureSampleDesc.Quality = 0;
-
-	// texture 2D description
-	D3D11_TEXTURE2D_DESC Tex2DDesc;
-	Tex2DDesc.Width = textureWidth;
-	Tex2DDesc.Height = textureHeight;
-	Tex2DDesc.MipLevels = 1;
-	Tex2DDesc.ArraySize = 1;
-	Tex2DDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	Tex2DDesc.SampleDesc = TextureSampleDesc;
-	Tex2DDesc.Usage = D3D11_USAGE_DEFAULT;
-	Tex2DDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE; 
-	Tex2DDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	Tex2DDesc.MiscFlags = 0;
-
-	// Data for the texture 2D
-	D3D11_SUBRESOURCE_DATA Tex2DData;
-	Tex2DData.pSysMem = imageData;
-	Tex2DData.SysMemPitch = textureWidth*(numChannels+1);
-	Tex2DData.SysMemSlicePitch = 0;
-	
-	// Creation of the Texture2D
-	HRESULT hr = device->CreateTexture2D(&Tex2DDesc, &Tex2DData, &texture);
-	return !FAILED(hr);
-}
 
 bool CreateGBuffer(ID3D11Device* device, ID3D11Texture2D*& gBuffer, ID3D11RenderTargetView*& gBufferRtv,ID3D11ShaderResourceView*& gBufferSrv, UINT width, UINT height)
 {
@@ -760,7 +725,7 @@ bool SetupPipeline(ID3D11Device* device,  ID3D11VertexShader*& vShader,
 		std::cerr << "Error creating meshes!" << std::endl;
 		return false;
 	}
-	if (!newCreate2DTexture(device, textureNames, textureResoursesVector, textureIDMap))
+	if (!Create2DTexture(device, textureNames, textureResoursesVector, textureIDMap))
 	{
 		std::cerr << "Error creating 2D textures!" << std::endl;
 		return false;
