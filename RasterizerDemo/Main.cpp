@@ -366,7 +366,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMFLOAT3 cubeMapPos = {0.0f, 0.0f, -0.5f };
 	XMFLOAT3 cubeMapRot = { 0.0f, XM_PIDIV2, 0.0f };
 
-	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, textureIDMap, false, "tors.png");
+	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, textureIDMap, false, "texture.jpg");
 	entityVector[1].get()->Initialize(device, entityPos2, entityRot, entityScale, "torus.obj", meshIDMap, textureIDMap, false, "torus.png");
 	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "torus.obj", meshIDMap, textureIDMap,false, "torus.png");
 	entityVector[3].get()->Initialize(device, cubeMapPos, cubeMapRot, entityScale, "smoothSphere.obj", meshIDMap, textureIDMap,  true, "torus.png");
@@ -390,6 +390,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	MSG msg = { };
+
+	UINT textureRenderID = -1;
 
 	XMFLOAT4X4 float4x4Array[3];
 
@@ -549,11 +551,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{
 			if (i != cubeMapIndex and entityVector[i].get()->isInitialized())
 			{
-				immediateContext->PSSetShaderResources(0, 1, &srvMeshTextures[i]);
+				//immediateContext->PSSetShaderResources(0, 1, &srvMeshTextures[i]);
+				textureRenderID = entityVector[i].get()->getTextureID();
+
+				ID3D11ShaderResourceView* currentTexture = textureVector[textureRenderID].get()->GetSRV();
+
+				immediateContext->PSSetShaderResources(0, 1, &currentTexture);
+
 				//immediateContext->VSSetConstantBuffers(1, 1, &currentBuffer);
 				Render(immediateContext, rtvArr, dsView, dsState,
 					viewport, vShader, pShader, cShader, inputLayout,
 					 entityVector[i].get()->getWorldMatrixBuffer(), currentBuffer, nrOfGBuffers, meshVector[entityVector[i].get()->getMeshID()].get());
+				//currentTexture->Release(); // Release the texture after use to avoid memory leaks
 			}
 			
 		}
