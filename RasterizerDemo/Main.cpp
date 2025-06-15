@@ -235,7 +235,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	std::vector<std::unique_ptr<Entity>> entityVector; // Use unique_ptr to manage memory automatically
 
-	UINT entityAmount = 4;
+	UINT entityAmount = 20;
 
 	for (int i = 0; i < nrOfMeshes; ++i)
 	{
@@ -317,23 +317,29 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMFLOAT3 entityPos = { 0.0f, 0.0f, -0.5f };
 	XMFLOAT3 entityPos2 = { 0.0f, 0.0f, -2.0f };
 	XMFLOAT3 entityPos3 = { 0.0f, 0.0f, -3.5f };
+	XMFLOAT3 entityPos4 = { 0.0f, 3.5f, 3.5f };
 
 	XMFLOAT3 entityRot = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT3 entityScale = { 1.0f, 1.0f, 1.0f };
 	XMFLOAT3 entityScale2 = { 0.5f, 0.5f, 0.5f };
+	XMFLOAT3 entityScale4 = { 1.5f, 1.5f, 1.5f };
 	XMFLOAT3 entityScale3 = { 0.5f, 0.5f, 1.5f };
 
-	XMFLOAT3 cubeMapPos = {0.0f, 0.0f, -0.5f };
+	XMFLOAT3 cubeMapPos = { 1.0f, 0.0f, -0.5f };
 	XMFLOAT3 cubeMapRot = { 0.0f, XM_PIDIV2, 0.0f };
 
 	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, textureIDMap, false, "texture.jpg");
 	entityVector[1].get()->Initialize(device, entityPos2, entityRot, entityScale, "torus.obj", meshIDMap, textureIDMap, false, "torus.png");
 	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "torus.obj", meshIDMap, textureIDMap,false, "torus.png");
 	entityVector[3].get()->Initialize(device, cubeMapPos, cubeMapRot, entityScale, "smoothSphere.obj", meshIDMap, textureIDMap,  true, "torus.png");
-	//entityVector[10].get()->Initialize(device, entityPos3, entityRot, entityScale3, "untitled.obj", meshIDMap, false);
+	entityVector[10].get()->Initialize(device, entityPos3, entityRot, entityScale3, "untitled.obj", meshIDMap, textureIDMap,false, "");
+	entityVector[4].get()->Initialize(device, entityPos4, entityRot, entityScale4, "untitled.obj", meshIDMap, textureIDMap,false, "texture2.png");
 
 	// create entities and assign index buffer ID, vertex buffer ID, Texture ID, modle name, texture name, 
-
+	for (int i = 0; i < 6; ++i)
+	{
+		cubeMapCameras[i]->SetPosition(cubeMapPos);
+	}
 	int cubeMapIndex = -1;
 
 	for (int i = 0; i < entityVector.size(); ++i)

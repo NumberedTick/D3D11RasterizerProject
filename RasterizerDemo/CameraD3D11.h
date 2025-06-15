@@ -54,7 +54,7 @@ public:
 
 	const DirectX::XMFLOAT3& GetPosition() const;
 
-	void Setposition(DirectX::XMFLOAT3 pos); // temp function to set position for debugging
+	void SetPosition(DirectX::XMFLOAT3 pos); // temp function to set position for debugging
 
 	void SetForward(DirectX::XMFLOAT3 forward);
 	void SetRight(DirectX::XMFLOAT3 right);

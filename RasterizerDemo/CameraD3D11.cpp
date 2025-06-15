@@ -94,7 +94,7 @@ const XMFLOAT3& CameraD3D11::GetPosition() const
 	return this->position;
 }
 
-void CameraD3D11::Setposition(XMFLOAT3 pos)
+void CameraD3D11::SetPosition(XMFLOAT3 pos)
 {
 	this->position = pos;
 	this->viewProjmatrix = this->SetViewProjectionMatrix();
