@@ -382,6 +382,25 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 	return true;
 }
 
+// New function for creating a 2D texture using the texture vector
+bool newCreate2DTexture(ID3D11Device* device, std::vector<std::string>& textureNames, 
+	std::vector<std::unique_ptr<ShaderResourceTextureD3D11>>& textureResoursesVector, std::map<std::string, UINT>& textureIDMap)
+{
+	for (int i = 0; i < textureNames.size(); ++i)
+	{
+		textureResoursesVector.emplace_back(std::make_unique<ShaderResourceTextureD3D11>());
+
+		textureResoursesVector[i]->Initialize(device, textureNames[i].c_str());
+
+		if (textureResoursesVector[i]->GetSRV() == nullptr)
+		{
+			std::cerr << "Error creating texture: " << textureNames[i] << std::endl;
+			return false;
+		}
+		textureIDMap[textureNames[i]] = i; // Store the textureID in the map for locating the textureID based on the name
+	}
+	return true;
+}
 
 bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture, std::string textureName) 
 {
@@ -707,7 +726,8 @@ bool SetupPipeline(ID3D11Device* device,  ID3D11VertexShader*& vShader,
 	CameraD3D11**& cameraArray, D3D11_VIEWPORT& cubeMapViewport, ID3D11Texture2D*& cubeMapDSTexture, ID3D11DepthStencilView*& cubeMapDSView, ID3D11DepthStencilState*& cubeMapDSState,
 	ID3D11SamplerState*& sampleState, std::vector<std::string>& modelNames, UINT width, UINT height, 
 	ID3D11UnorderedAccessView*& uavTextureCube, CameraD3D11& mainCamera, ConstantBufferD3D11& cameraPositionBuffer, 
-	std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer, std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::map<std::string, UINT>& meshIDMap)
+	std::vector<std::unique_ptr<VertexBufferD3D11>>& uniqueVBuffer, std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::map<std::string, UINT>& meshIDMap, 
+	std::vector<std::string>& textureNames, std::vector<std::unique_ptr<ShaderResourceTextureD3D11>>& textureResoursesVector, std::map<std::string, UINT>& textureIDMap)
 {
 	std::string vShaderByteCode;
 	if (!LoadShaders(device, vShader, pShader, pShaderCubeMap, cShader, cShaderCubeMap, vShaderByteCode))
@@ -738,6 +758,11 @@ bool SetupPipeline(ID3D11Device* device,  ID3D11VertexShader*& vShader,
 	if (!CreateMesh(device, modelNames, meshVector, meshIDMap))
 	{
 		std::cerr << "Error creating meshes!" << std::endl;
+		return false;
+	}
+	if (!newCreate2DTexture(device, textureNames, textureResoursesVector, textureIDMap))
+	{
+		std::cerr << "Error creating 2D textures!" << std::endl;
 		return false;
 	}
 

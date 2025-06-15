@@ -15,6 +15,7 @@
 #include "CameraD3D11.h"
 #include "MeshD3D11.h"
 #include "Entity.h"
+#include "ShaderResourceTextureD3D11.h"
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
@@ -210,9 +211,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	textureNames = {
 		"torus.png",
 		"texture2.png",
+		"texture.jpg"
+	};	
+	
+	std::vector<std::string> textureNames2;
+
+	textureNames2 = {
+		"torus.png",
+		"texture2.png",
 		"texture.jpg",
+		"missing.jpg" // Add a missing texture to test the fallback
 	};
 
+	std::vector<std::unique_ptr<ShaderResourceTextureD3D11>> textureVector; // Use unique_ptr to manage memory automatically
+
+	std::map<std::string, UINT> textureIDMap; // Map to store texture names and their IDs
 
 	std::vector<Material> materialVector; // Use unique_ptr to manage memory automatically
 
@@ -298,7 +311,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		constantCameraBuffer, immediateContext, cubeMapTexture, cubeMapUavArray,
 		cubeMapSrv, cubeMapCameras,cubeMapViewport, cubeMapDSTexture,cubeMapDSView,cubeMapDSState,
 		samplerState, meshNames, WIDTH, HEIGHT, uavTextureCube, mainCamera, cameraPositionBuffer,
-		uniqueVBuffer, meshVector, meshIDMap))
+		uniqueVBuffer, meshVector, meshIDMap, textureNames2, textureVector, textureIDMap))
 	{
 		std::cerr << "Failed to setup pipeline!" << std::endl;
 		return -1;
@@ -353,10 +366,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMFLOAT3 cubeMapPos = {0.0f, 0.0f, -0.5f };
 	XMFLOAT3 cubeMapRot = { 0.0f, XM_PIDIV2, 0.0f };
 
-	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, false);
-	entityVector[1].get()->Initialize(device, entityPos2, entityRot, entityScale, "torus.obj", meshIDMap, false);
-	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "torus.obj", meshIDMap, false);
-	entityVector[3].get()->Initialize(device, cubeMapPos, cubeMapRot, entityScale, "smoothSphere.obj", meshIDMap, true);
+	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, textureIDMap, false, "tors.png");
+	entityVector[1].get()->Initialize(device, entityPos2, entityRot, entityScale, "torus.obj", meshIDMap, textureIDMap, false, "torus.png");
+	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "torus.obj", meshIDMap, textureIDMap,false, "torus.png");
+	entityVector[3].get()->Initialize(device, cubeMapPos, cubeMapRot, entityScale, "smoothSphere.obj", meshIDMap, textureIDMap,  true, "torus.png");
 	//entityVector[10].get()->Initialize(device, entityPos3, entityRot, entityScale3, "untitled.obj", meshIDMap, false);
 
 	// create entities and assign index buffer ID, vertex buffer ID, Texture ID, modle name, texture name, 

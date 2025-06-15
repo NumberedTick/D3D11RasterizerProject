@@ -5,7 +5,7 @@
 
 void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
 	const DirectX::XMFLOAT3& roation, const DirectX::XMFLOAT3& scale, const std::string& meshName, 
-	const std::map<std::string, UINT>& meshIDMap, bool isCubeMap)
+	const std::map<std::string, UINT>& meshIDMap, const std::map<std::string, UINT>& textureIDMap, bool isCubeMap, const std::string& textureName)
 {
 	/*
 	* Function Flow
@@ -33,20 +33,31 @@ void Entity::Initialize(ID3D11Device* device, const DirectX::XMFLOAT3& position,
 	this->rotation = roation;
 	this->scale = scale;
 
-	DirectX::XMFLOAT4X4 worldMatrixFloat4x4 = this->SetWorldMatrix(); // Generate the world matrix and store it in a XMFLOAT4X4 object
-	
+	// Generate a temporary world matrix and turn it into a ConstantBufferD3D11 object
+	DirectX::XMFLOAT4X4 worldMatrixFloat4x4 = this->SetWorldMatrix(); 
+
+	// assigning the worldMatrixFloat4x4 to the worldMatrixBuffer
 	this->worldMatrixBuffer = ConstantBufferD3D11(device, sizeof(DirectX::XMFLOAT4X4), &worldMatrixFloat4x4);
 
-	// Initialize the mesh object
+	// Assign the meshID to the ID of the mesh with the given name
 	this->meshID = meshIDMap.at(meshName); // Sets meshID to the ID of the mesh with the given name
 
-	// Assign the texture object
-	
-	// Create the bounding box from the meshData
+	// Assigne the textureID to the ID of the texture with the given name (not implemented)
+
+	// If the textureName is not found in the textureIDMap, use the "missing.jpg" texture as a fallback to show a missing texture
+	UINT textureID = textureIDMap.count(textureName) ? textureIDMap.at(textureName) : textureIDMap.at("missing.jpg"); 
+	this->textureID = textureID; 
+
+
+	// Create the bounding box from the meshData (not implemented)
 	//entityBoundingBox.CreateFromPoints(entityBoundingBox, meshData.vertexInfo.nrOfVerticesInBuffer, meshData.vertexInfo.vertexData, sizeof(SimpleVertex));
 
+	// Assigns if it is a cube map or not
 	this->cubeMap = isCubeMap;
-	this->initialized = true; // Set the initialized boolean to true. Used to be able to create more entites but not initilize them or try to render them
+
+	// Set the initialized boolean to true to show that the entity has been initialized and can be rendered
+	// if this is not set, the entity will not be rendered and thus more entities can be created without causing problems in the render functions
+	this->initialized = true; 
 }
 
 
@@ -68,6 +79,11 @@ bool Entity::isInitialized() const
 UINT Entity::getMeshID() const
 {
 	return this->meshID;
+}
+
+UINT Entity::getTextureID() const
+{
+	return this->textureID;
 }
 
 void Entity::SetPosition(const DirectX::XMFLOAT3& pos)
