@@ -186,7 +186,7 @@ bool LoadObj(std::string& modleName, objl::Loader& objLoader)
 }
 
 
-bool tempLoadVertexs(objl::Loader objLoader, std::vector<SimpleVertex>& modelVertexes)
+bool LoadVertexs(objl::Loader objLoader, std::vector<SimpleVertex>& modelVertexes)
 {
 	for (int j = 0; j < objLoader.LoadedMeshes.size(); ++j)
 	{
@@ -209,7 +209,7 @@ bool tempLoadVertexs(objl::Loader objLoader, std::vector<SimpleVertex>& modelVer
 	return true;
 }
 
-bool tempLoadIndices(objl::Loader objLoader, std::vector<unsigned int>& indices)
+bool LoadIndices(objl::Loader objLoader, std::vector<unsigned int>& indices)
 {
 	// Loads indices into a vector
 	for (int i = 0; i < objLoader.LoadedIndices.size(); ++i)
@@ -297,41 +297,14 @@ bool CreateViewProjMatrixBuffer(ID3D11Device* device, ID3D11Buffer*& constantVie
 }
 
 // Function for Creating a constant buffer for a material to be sent to the Pixel shader
-bool CreateMaterialBuffer(ID3D11Device* device, ConstantBufferD3D11*& constantBuffer, Material& material)
-{
-	constantBuffer->Initialize(device, sizeof(Material), &material);
-	return true;
-}
-
-bool tempCreateMaterialBuffer(ID3D11Device* device, std::unique_ptr<ConstantBufferD3D11>& materialConstantBuffer, Material& material)
+bool CreateMaterialBuffer(ID3D11Device* device, std::unique_ptr<ConstantBufferD3D11>& materialConstantBuffer, Material& material)
 {
 	materialConstantBuffer->Initialize(device, sizeof(Material), &material);
 	return true;
 }
 
-bool CreateMaps(ID3D11Device* device, Material& material,  ConstantBufferD3D11*& materialConstantBuffer, objl::Loader objLoader)
-{
 
-	// Color values
-	std::array<float, 4> ambientColor = { objLoader.LoadedMaterials[0].Ka.X, objLoader.LoadedMaterials[0].Ka.Y, objLoader.LoadedMaterials[0].Ka.Z, 1.0f };
-	std::array<float, 4> diffuseColor = { objLoader.LoadedMaterials[0].Kd.X,objLoader.LoadedMaterials[0].Kd.Y,objLoader.LoadedMaterials[0].Kd.Z,1.0f };
-	std::array<float, 4> specularColor = { objLoader.LoadedMaterials[0].Ks.X,objLoader.LoadedMaterials[0].Ks.Y,objLoader.LoadedMaterials[0].Ks.Z,1.0f };
-
-	// Material Coeficients
-	float ambientIntensity = 0.3f;
-	float padding = 0.0f;
-	float specularPower = objLoader.LoadedMaterials[0].Ns;
-
-	// Creation of the material
-	material = { ambientColor, diffuseColor, specularColor, ambientIntensity, padding, specularPower };
-
-	if (!CreateMaterialBuffer(device, materialConstantBuffer, material))
-	{
-		return false;
-	}
-	return true;
-}
-bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& material)
+bool CreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& material)
 {
 
 	// Color values
@@ -350,18 +323,12 @@ bool tempCreateMaps(ID3D11Device* device, objl::Loader objLoader, Material& mate
 	return true;
 }
 
-// New function called CreateMesh that creates the meshes needed for the obejcts loaded
-//
-// paramiters (device, meshNames, MaterialArray)
-//
-
-// REMOVE "Material**& materialArray, ConstantBufferD3D11**& materialBufferArray" AFTER ADDING THE MESHD3D11 MATERIAL BUFFER INTERNAL 
 bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::vector<std::unique_ptr<MeshD3D11>>& meshVector, std::map<std::string, UINT>& meshIDMap)
 {
 	for (int i = 0; i < meshNames.size(); i++)
 	{
 		std::vector<SimpleVertex> Vertices;
-		std::vector<unsigned int> indices;	
+		std::vector<unsigned int> indices;
 
 		Material functionMaterial;
 		std::unique_ptr<ConstantBufferD3D11> materialConstantBuffer = std::make_unique<ConstantBufferD3D11>();
@@ -370,12 +337,14 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 		objl::Loader objLoader;
 		if (!LoadObj(meshNames[i], objLoader))
 		{
+			std::cerr << "Error loading OBJ file: " << meshNames[i] << std::endl;
 			return false;
 		}
 
 		// Loading the vertexs and vertexInfo in the meshData
-		if (!tempLoadVertexs(objLoader, Vertices)) // change to take in objLoader
+		if (!LoadVertexs(objLoader, Vertices))
 		{
+			std::cerr << "Error loading vertices from OBJ file!" << std::endl;
 			return false;
 		}
 		// handeling meshData vertexInfo
@@ -383,9 +352,10 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 		meshData.vertexInfo.nrOfVerticesInBuffer = Vertices.size();
 		meshData.vertexInfo.vertexData = Vertices.data();
 
-
-		if (!tempLoadIndices(objLoader, indices)) // change to take in objLoader
+		// Loading the indices from the OBJ file
+		if (!LoadIndices(objLoader, indices)) 
 		{
+			std::cerr << "Error loading indices from OBJ file!" << std::endl;
 			return false;
 		}
 
@@ -393,8 +363,9 @@ bool CreateMesh(ID3D11Device* device, std::vector<std::string>& meshNames, std::
 		meshData.indexInfo.nrOfIndicesInBuffer = indices.size();
 		meshData.indexInfo.indexData = indices.data();
 
-		if (!tempCreateMaps(device, objLoader, functionMaterial))
+		if (!CreateMaps(device, objLoader, functionMaterial))
 		{
+			std::cerr << "Error creating maps for material!" << std::endl;
 			return false;
 		}
 
@@ -442,7 +413,7 @@ bool Create2DTexture(ID3D11Device* device, ID3D11Texture2D*& texture, std::strin
 	Tex2DData.pSysMem = imageData;
 	Tex2DData.SysMemPitch = textureWidth*(numChannels+1);
 	Tex2DData.SysMemSlicePitch = 0;
-
+	
 	// Creation of the Texture2D
 	HRESULT hr = device->CreateTexture2D(&Tex2DDesc, &Tex2DData, &texture);
 	return !FAILED(hr);
