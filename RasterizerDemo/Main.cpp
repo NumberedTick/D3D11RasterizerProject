@@ -16,6 +16,7 @@
 #include "MeshD3D11.h"
 #include "Entity.h"
 #include "ShaderResourceTextureD3D11.h"
+#include "EntityCreation.h"
 
 void Render(ID3D11DeviceContext* immediateContext, ID3D11RenderTargetView** rtvArr,
 			ID3D11DepthStencilView* dsView, ID3D11DepthStencilState* dsState, D3D11_VIEWPORT& viewport, ID3D11VertexShader* vShader,
@@ -70,6 +71,8 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 	UINT meshRenderID = -1;
 	UINT textureRenderID = -1;
 
+	UINT nrOfEntities = static_cast<UINT>(entityVector.size());
+
 
 	float clearColour[4] = { 0, 0, 0, 0 };
 
@@ -88,7 +91,7 @@ void RenderReflectivObject(ID3D11DeviceContext* immediateContext, ID3D11RenderTa
 		cubeMapCameras[i]->UpdateInternalConstantBuffer(immediateContext);
 		ID3D11Buffer* currentBuffer = cubeMapCameras[i]->GetConstantBuffer();
 
-		for (int k = 0; k < 4; ++k) {
+		for (int k = 0; k < nrOfEntities; ++k) {
 			meshRenderID = entityVector[k].get()->getMeshID();
 			textureRenderID = entityVector[k].get()->getTextureID();
 
@@ -328,12 +331,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMFLOAT3 cubeMapPos = { 1.0f, 0.0f, -0.5f };
 	XMFLOAT3 cubeMapRot = { 0.0f, XM_PIDIV2, 0.0f };
 
-	entityVector[0].get()->Initialize(device, entityPos, entityRot, entityScale, "roomHoles.obj", meshIDMap, textureIDMap, false, "texture.jpg");
-	entityVector[1].get()->Initialize(device, entityPos2, entityRot, entityScale, "torus.obj", meshIDMap, textureIDMap, false, "torus.png");
-	entityVector[2].get()->Initialize(device, entityPos2, entityRot, entityScale2, "torus.obj", meshIDMap, textureIDMap,false, "torus.png");
-	entityVector[3].get()->Initialize(device, cubeMapPos, cubeMapRot, entityScale, "smoothSphere.obj", meshIDMap, textureIDMap,  true, "torus.png");
-	entityVector[10].get()->Initialize(device, entityPos3, entityRot, entityScale3, "untitled.obj", meshIDMap, textureIDMap,false, "");
-	entityVector[4].get()->Initialize(device, entityPos4, entityRot, entityScale4, "untitled.obj", meshIDMap, textureIDMap,false, "texture2.png");
+	InitializeEntities(device, entityVector, meshIDMap, textureIDMap);
 
 	// create entities and assign index buffer ID, vertex buffer ID, Texture ID, modle name, texture name, 
 	for (int i = 0; i < 6; ++i)
